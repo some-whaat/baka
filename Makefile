@@ -1,8 +1,10 @@
 CFLAGS = -std=c++17 -O2
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
-baka: main.cpp
-	g++ $(CFLAGS) -o baka main.cpp $(LDFLAGS)
+CPP_FILES = $(wildcard *.cpp)
+
+baka: $(CPP_FILES)
+	g++ $(CFLAGS) -o baka $(CPP_FILES) $(LDFLAGS)
 
 .PHONY: test clean
 
