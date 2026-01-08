@@ -8,7 +8,7 @@
 namespace baka {
 
     class Window {
-        
+
         public:
 
             Window(int w, int h, std::string name);
@@ -16,6 +16,7 @@ namespace baka {
 
             bool shouldClose() { return glfwWindowShouldClose(window); }
 
+            // to avoid memory shenanigans
             Window(const Window &) = delete;
             Window &operator=(const Window &) = delete;
 
@@ -25,8 +26,8 @@ namespace baka {
 
             void initWindow();
 
-            const int width;
-            const int height;
+            const int WIDTH;
+            const int HEIGHT;
 
             std::string window_name;
 

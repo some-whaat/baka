@@ -2,7 +2,7 @@
 
 namespace baka {
 
-    Window::Window(int w, int h, std::string name) : width{w}, height{h}, window_name{name} {
+    Window::Window(int w, int h, std::string name) : WIDTH{w}, HEIGHT{h}, window_name{name} {
         initWindow();
     }
 
@@ -19,7 +19,7 @@ namespace baka {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        window = glfwCreateWindow(width, height, window_name.c_str(), nullptr, nullptr);
+        window = glfwCreateWindow(WIDTH, HEIGHT, window_name.c_str(), nullptr, nullptr);
     }
 
 }  // namespace baka
