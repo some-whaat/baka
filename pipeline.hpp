@@ -7,9 +7,20 @@
 
 namespace baka {
 
-    struct PipelineConfigInfo
-    {
-        /* data */
+    // I've desided to give up on my naming convention for this thing as all Vulcan vars named likeThat anyway
+    struct PipelineConfigInfo {
+        VkViewport viewport;
+        VkRect2D scissor;
+        // VkPipelineViewportStateCreateInfo viewportInfo;
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+        VkPipelineRasterizationStateCreateInfo rasterizationInfo;
+        VkPipelineMultisampleStateCreateInfo multisampleInfo;
+        VkPipelineColorBlendAttachmentState colorBlendAttachment;
+        VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+        VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+        VkPipelineLayout pipelineLayout = nullptr;
+        VkRenderPass renderPass = nullptr;
+        uint32_t subpass = 0;
     };
 
     

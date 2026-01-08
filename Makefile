@@ -6,10 +6,10 @@ CPP_FILES = $(wildcard *.cpp)
 baka: $(CPP_FILES)
 	g++ $(CFLAGS) -o baka $(CPP_FILES) $(LDFLAGS)
 
-.PHONY: test clean
+.PHONY: t c
 
-test: baka
+t: baka
 	./baka
 
-clean:
+c:
 	rm -f baka
