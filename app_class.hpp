@@ -2,6 +2,7 @@
 
 #include "window.hpp"
 #include "pipeline.hpp"
+#include "device.hpp"
 
 namespace baka {
 
@@ -15,7 +16,8 @@ namespace baka {
 
         private:
             Window window{WIDTH, HEIGHT, "YAY, Vulkan!"};
-            Pipeline pipeline{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv"};
+            Device device{window};
+            Pipeline pipeline{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
     };
     
 }  // namespace baka

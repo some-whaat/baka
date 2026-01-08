@@ -16,6 +16,8 @@ namespace baka {
 
             bool shouldClose() { return glfwWindowShouldClose(window); }
 
+            void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
+
             // to avoid memory shenanigans
             Window(const Window &) = delete;
             Window &operator=(const Window &) = delete;
