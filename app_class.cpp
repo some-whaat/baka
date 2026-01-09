@@ -12,7 +12,7 @@ App::App() {
   createCommandBuffers();
 }
 
-App::~App() { vkDestroyPipelineLayout(device.device(), pipeline_layout, nullptr); }
+App::~App() { vkDestroyPipelineLayout(_device.getDevice(), pipeline_layout, nullptr); }
 
 void App::run() {
   while (!window.shouldClose()) {
@@ -20,7 +20,7 @@ void App::run() {
     drawFrame();
   }
 
-  vkDeviceWaitIdle(device.device());
+  vkDeviceWaitIdle(_device.getDevice());
 }
 
 void App::createPipelineLayout() {
@@ -30,7 +30,7 @@ void App::createPipelineLayout() {
   pipelineLayoutInfo.pSetLayouts = nullptr;
   pipelineLayoutInfo.pushConstantRangeCount = 0;
   pipelineLayoutInfo.pPushConstantRanges = nullptr;
-  if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipeline_layout) !=
+  if (vkCreatePipelineLayout(_device.getDevice(), &pipelineLayoutInfo, nullptr, &pipeline_layout) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
@@ -41,10 +41,11 @@ void App::createPipeline() {
       Pipeline::defaultPipelineConfigInfo(swap_chain.width(), swap_chain.height());
   pipelineConfig.renderPass = swap_chain.getRenderPass();
   pipelineConfig.pipelineLayout = pipeline_layout;
+
   pipeline = std::make_unique<Pipeline>(
       "shaders/first_shader.vert.spv",
       "shaders/first_shader.frag.spv",
-      device,
+      _device,
       pipelineConfig);
 }
 
@@ -54,10 +55,10 @@ void App::createCommandBuffers() {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandPool = device.getCommandPool();
+  allocInfo.commandPool = _device.getCommandPool();
   allocInfo.commandBufferCount = static_cast<uint32_t>(command_buffers.size());
 
-  if (vkAllocateCommandBuffers(device.device(), &allocInfo, command_buffers.data()) != VK_SUCCESS) {
+  if (vkAllocateCommandBuffers(_device.getDevice(), &allocInfo, command_buffers.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers!");
   }
 

@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-debug",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "debug"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "detail": "Build with debug symbols using Make"
+    },
+    {
+      "label": "build-release",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "release"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "detail": "Build optimized release using Make"
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "clean"
+      ],
+      "detail": "Clean build artifacts"
+    },
+    {
+      "label": "run",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "run"
+      ],
+      "detail": "Run the program"
+    },
+    {
+      "type": "process",
+      "command": "/usr/bin/env",
+      "args": [
+        "CC=clang",
+        "CFLAGS=-g -Wall",
+        "make",
+        "${fileBasenameNoExtension}"
+      ],
+      "options": {
+        "cwd": "${fileDirname}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "label": "makelldb: selected file"
+    }
+  ]
+}

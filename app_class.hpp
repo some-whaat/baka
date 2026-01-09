@@ -33,8 +33,8 @@ class App {
         void drawFrame();
 
         Window window{WIDTH, HEIGHT, "YAY, Vulkan!"};
-        Device device{window};
-        SwapChain swap_chain{device, window.getExtent()};
+        Device _device{window};
+        SwapChain swap_chain{_device, window.getExtent()};
         std::unique_ptr<Pipeline> pipeline;//{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
         VkPipelineLayout pipeline_layout;
         std::vector<VkCommandBuffer> command_buffers;

@@ -5,6 +5,7 @@
 // std lib headers
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace baka {
 
@@ -40,10 +41,10 @@ class Device {
   Device &operator=(Device &&) = delete;
 
   VkCommandPool getCommandPool() { return commandPool; }
-  VkDevice device() { return device_; }
-  VkSurfaceKHR surface() { return surface_; }
-  VkQueue graphicsQueue() { return graphicsQueue_; }
-  VkQueue presentQueue() { return presentQueue_; }
+  VkDevice getDevice() { return device_; }
+  VkSurfaceKHR getSurface() { return surface_; }
+  VkQueue getGraphicsQueue() { return graphicsQueue_; }
+  VkQueue getPresentQueue() { return presentQueue_; }
 
   SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
