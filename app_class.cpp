@@ -42,9 +42,9 @@ void App::createPipeline() {
   pipelineConfig.renderPass = swap_chain.getRenderPass();
   pipelineConfig.pipelineLayout = pipeline_layout;
   pipeline = std::make_unique<Pipeline>(
-      device,
       "shaders/first_shader.vert.spv",
       "shaders/first_shader.frag.spv",
+      device,
       pipelineConfig);
 }
 
@@ -57,8 +57,7 @@ void App::createCommandBuffers() {
   allocInfo.commandPool = device.getCommandPool();
   allocInfo.commandBufferCount = static_cast<uint32_t>(command_buffers.size());
 
-  if (vkAllocateCommandBuffers(device.device(), &allocInfo, command_buffers.data()) !=
-      VK_SUCCESS) {
+  if (vkAllocateCommandBuffers(device.device(), &allocInfo, command_buffers.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers!");
   }
 
@@ -79,7 +78,7 @@ void App::createCommandBuffers() {
     renderPassInfo.renderArea.extent = swap_chain.getSwapChainExtent();
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
+    clearValues[0].color = {0.6f, 0.18f, 0.46f, 1.0f};
     clearValues[1].depthStencil = {1.0f, 0};
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
