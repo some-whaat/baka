@@ -7,6 +7,7 @@
 namespace baka {
 
 App::App() {
+  loadModels();
   createPipelineLayout();
   createPipeline();
   createCommandBuffers();
@@ -21,6 +22,16 @@ void App::run() {
   }
 
   vkDeviceWaitIdle(_device.getDevice());
+}
+
+void App::loadModels() {
+  std::vector<Model::Vertex> vertices{
+    {{0.0f, -0.5f}},
+    {{0.5f, 0.5f}},
+    {{-0.5f, 0.5f}}
+  };
+
+  model = std::make_unique<Model>(_device, vertices);
 }
 
 void App::createPipelineLayout() {
@@ -86,6 +97,8 @@ void App::createCommandBuffers() {
 
     vkCmdBeginRenderPass(command_buffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+    pipeline->bind(command_buffers[i]);
+    model->bind(command_buffers[i]);
     pipeline->bind(command_buffers[i]);
     vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
 
