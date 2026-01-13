@@ -30,4 +30,8 @@ namespace baka {
         }
     }
 
+    void Window::changeTitle(std::string new_title) {
+        glfwSetWindowTitle(window, new_title.c_str());
+    }
+
 }  // namespace baka

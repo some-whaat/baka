@@ -108,6 +108,7 @@ void App::createCommandBuffers() {
     }
   }
 }
+
 void App::drawFrame() {
   uint32_t imageIndex;
   auto result = swap_chain.acquireNextImage(&imageIndex);
@@ -119,6 +120,21 @@ void App::drawFrame() {
   if (result != VK_SUCCESS) {
     throw std::runtime_error("failed to present swap chain image!");
   }
+
+  updateFrameRate();
+}
+
+void App::updateFrameRate() {
+    double current_time = glfwGetTime();
+    frame_count++;
+    
+    if (current_time - last_time >= 1.0) {
+        fps = frame_count / (current_time - last_time);
+        frame_count = 0;
+        last_time = current_time;
+    }
+
+    window.changeTitle("fps: " + std::to_string(fps));
 }
 
 }  // namespace baka

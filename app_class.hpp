@@ -18,6 +18,8 @@ class App {
         static constexpr int WIDTH = 1600;
         static constexpr int HEIGHT = 1200;
 
+        float fps = 0;
+
         App();
         ~App();
 
@@ -33,6 +35,11 @@ class App {
         void createPipeline();
         void createCommandBuffers();
         void drawFrame();
+
+        double last_time = glfwGetTime();
+        int frame_count = 0;
+
+        void updateFrameRate();
 
         Window window{WIDTH, HEIGHT, "YAY, Vulkan!"};
         Device _device{window};

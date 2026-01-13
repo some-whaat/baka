@@ -16,8 +16,10 @@ namespace baka {
 
             bool shouldClose() { return glfwWindowShouldClose(window); }
             VkExtent2D getExtent() {return {static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)}; }
-
+            
             void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
+
+            void changeTitle(std::string new_title);
 
             // to avoid memory shenanigans
             Window(const Window &) = delete;
