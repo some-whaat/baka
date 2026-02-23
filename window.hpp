@@ -15,8 +15,11 @@ namespace baka {
             ~Window();
 
             bool shouldClose() { return glfwWindowShouldClose(window); }
-            VkExtent2D getExtent() {return {static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)}; }
-            
+            VkExtent2D getExtent() {return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}; }
+            bool wasWindowResized() {return was_framebuffer_resized; }
+            void resetFramebufferResized() {was_framebuffer_resized = false; }
+
+
             void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
 
             void changeTitle(std::string new_title);
@@ -31,8 +34,11 @@ namespace baka {
 
             void initWindow();
 
-            const int WIDTH;
-            const int HEIGHT;
+            static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
+            int width;
+            int height;
+            bool was_framebuffer_resized = false;
 
             std::string window_name;
 

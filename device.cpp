@@ -69,6 +69,7 @@ Device::~Device() {
 }
 
 void Device::createInstance() {
+
   if (enableValidationLayers && !checkValidationLayerSupport()) {
     throw std::runtime_error("validation layers requested, but not available!");
   }
@@ -77,7 +78,7 @@ void Device::createInstance() {
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   appInfo.pApplicationName = "LittleVulkanEngine App";
   appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.pEngineName = "No Engine";
+  appInfo.pEngineName = "baka";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.apiVersion = VK_API_VERSION_1_0;
 
@@ -227,6 +228,7 @@ void Device::populateDebugMessengerCreateInfo(
 }
 
 void Device::setupDebugMessenger() {
+  
   if (!enableValidationLayers) return;
   VkDebugUtilsMessengerCreateInfoEXT createInfo;
   populateDebugMessengerCreateInfo(createInfo);

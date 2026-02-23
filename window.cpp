@@ -4,7 +4,7 @@
 
 namespace baka {
 
-    Window::Window(int w, int h, std::string name) : WIDTH{w}, HEIGHT{h}, window_name{name} {
+    Window::Window(int w, int h, std::string name) : width{w}, height{h}, window_name{name} {
         initWindow();
     }
 
@@ -19,9 +19,11 @@ namespace baka {
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        window = glfwCreateWindow(WIDTH, HEIGHT, window_name.c_str(), nullptr, nullptr);
+        window = glfwCreateWindow(width, height, window_name.c_str(), nullptr, nullptr);
+        glfwSetWindowUserPointer(window, this);
+        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     }
 
     void Window::createWindowSurface(VkInstance instance, VkSurfaceKHR *surface) {
@@ -33,5 +35,13 @@ namespace baka {
     void Window::changeTitle(std::string new_title) {
         glfwSetWindowTitle(window, new_title.c_str());
     }
+
+    void Window::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+        Window* new_window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        new_window->was_framebuffer_resized = true;
+        new_window->width = width;
+        new_window->height = height;
+    }
+
 
 }  // namespace baka

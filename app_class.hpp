@@ -35,6 +35,8 @@ class App {
         void createPipeline();
         void createCommandBuffers();
         void drawFrame();
+        void recreateSwapChain();
+        void recordCommandBuffer(int image_index);
 
         double last_time = glfwGetTime();
         int frame_count = 0;
@@ -43,7 +45,7 @@ class App {
 
         Window window{WIDTH, HEIGHT, "YAY, Vulkan!"};
         Device _device{window};
-        SwapChain swap_chain{_device, window.getExtent()};
+        std::unique_ptr<SwapChain> swap_chain;
         std::unique_ptr<Pipeline> pipeline;//{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
         VkPipelineLayout pipeline_layout;
         std::vector<VkCommandBuffer> command_buffers;
