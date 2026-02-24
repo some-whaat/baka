@@ -10,6 +10,11 @@
 #include <glm/glm.hpp>
 
 namespace baka {
+  	
+struct PushConstantData {
+  glm::vec2 offset;
+  alignas(16) glm::vec3 color;
+};
 
 App::App() {
   loadModels();
@@ -40,12 +45,17 @@ void App::loadModels() {
 }
 
 void App::createPipelineLayout() {
+  VkPushConstantRange pushConstantRange{};
+  pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+  pushConstantRange.offset = 0;
+  pushConstantRange.size = sizeof(PushConstantData);
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = 0;
   pipelineLayoutInfo.pSetLayouts = nullptr;
-  pipelineLayoutInfo.pushConstantRangeCount = 0;
-  pipelineLayoutInfo.pPushConstantRanges = nullptr;
+  pipelineLayoutInfo.pushConstantRangeCount = 1;
+  pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
   if (vkCreatePipelineLayout(_device.getDevice(), &pipelineLayoutInfo, nullptr, &pipeline_layout) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
@@ -140,7 +150,24 @@ void App::recordCommandBuffer(int image_index) {
     pipeline->bind(command_buffers[image_index]);
     model->bind(command_buffers[image_index]);
     pipeline->bind(command_buffers[image_index]);
-    vkCmdDraw(command_buffers[image_index], 3, 1, 0, 0);
+    // vkCmdDraw(command_buffers[image_index], 3, 1, 0, 0);
+
+    for (int j = 0; j < 4; j++) {
+      PushConstantData push{};
+      push.offset = {-0.0f, -0.4f + j * 0.25f};
+      push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
+
+      vkCmdPushConstants(
+        command_buffers[image_index],
+        pipeline_layout,
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        0,
+        sizeof(PushConstantData),
+        &push
+      );
+
+      model->draw(command_buffers[image_index]);
+    }
 
     vkCmdEndRenderPass(command_buffers[image_index]);
     if (vkEndCommandBuffer(command_buffers[image_index]) != VK_SUCCESS) {
@@ -154,10 +181,11 @@ void App::drawFrame() {
   uint32_t image_index;
   auto result = swap_chain->acquireNextImage(&image_index);
   
-if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-  recreateSwapChain();
-  return;
-}
+  // if resized
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    recreateSwapChain();
+    return;
+  }
 
   if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     throw std::runtime_error("failed to acquire swap chain image!");
