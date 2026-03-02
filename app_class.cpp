@@ -123,51 +123,57 @@ void App::createCommandBuffers() {
 }
 
 void App::recordCommandBuffer(int image_index) {
-    for (int i = 0; i < command_buffers.size(); i++) {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    if (vkBeginCommandBuffer(command_buffers[image_index], &beginInfo) != VK_SUCCESS) {
-      throw std::runtime_error("failed to begin recording command buffer!");
-    }
+  static float anim = 0;
 
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = swap_chain->getRenderPass();
-    renderPassInfo.framebuffer = swap_chain->getFrameBuffer(image_index);
+  anim += 0.01;
 
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = swap_chain->getSwapChainExtent();
 
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {0.6f, 0.18f, 0.46f, 1.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
+  for (int i = 0; i < command_buffers.size(); i++) {
+  VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    vkCmdBeginRenderPass(command_buffers[image_index], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  if (vkBeginCommandBuffer(command_buffers[image_index], &beginInfo) != VK_SUCCESS) {
+    throw std::runtime_error("failed to begin recording command buffer!");
+  }
 
-    pipeline->bind(command_buffers[image_index]);
-    model->bind(command_buffers[image_index]);
-    pipeline->bind(command_buffers[image_index]);
-    // vkCmdDraw(command_buffers[image_index], 3, 1, 0, 0);
+  VkRenderPassBeginInfo renderPassInfo{};
+  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  renderPassInfo.renderPass = swap_chain->getRenderPass();
+  renderPassInfo.framebuffer = swap_chain->getFrameBuffer(image_index);
 
-    for (int j = 0; j < 4; j++) {
-      PushConstantData push{};
-      push.offset = {-0.0f, -0.4f + j * 0.25f};
-      push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
+  renderPassInfo.renderArea.offset = {0, 0};
+  renderPassInfo.renderArea.extent = swap_chain->getSwapChainExtent();
 
-      vkCmdPushConstants(
-        command_buffers[image_index],
-        pipeline_layout,
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0,
-        sizeof(PushConstantData),
-        &push
-      );
+  std::array<VkClearValue, 2> clearValues{};
+  clearValues[0].color = {0.6f, 0.18f, 0.46f, 1.0f};
+  clearValues[1].depthStencil = {1.0f, 0};
+  renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+  renderPassInfo.pClearValues = clearValues.data();
 
-      model->draw(command_buffers[image_index]);
-    }
+  vkCmdBeginRenderPass(command_buffers[image_index], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+  pipeline->bind(command_buffers[image_index]);
+  model->bind(command_buffers[image_index]);
+  pipeline->bind(command_buffers[image_index]);
+  // vkCmdDraw(command_buffers[image_index], 3, 1, 0, 0);
+
+  for (int j = 0; j < 4; j++) {
+    PushConstantData push{};
+    push.offset = {0.5*sin(anim + j*-0.3), 0.5*cos(anim + j*-0.3)};
+    push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
+
+    vkCmdPushConstants(
+      command_buffers[image_index],
+      pipeline_layout,
+      VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+      0,
+      sizeof(PushConstantData),
+      &push
+    );
+
+    model->draw(command_buffers[image_index]);
+  }
 
     vkCmdEndRenderPass(command_buffers[image_index]);
     if (vkEndCommandBuffer(command_buffers[image_index]) != VK_SUCCESS) {
