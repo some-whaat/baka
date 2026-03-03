@@ -44,11 +44,15 @@ SwapChain::~SwapChain() {
 
   vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);
 
-  // cleanup synchronization objects
+  // cleanup per-frame synchronization objects
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    vkDestroySemaphore(device.getDevice(), renderFinishedSemaphores[i], nullptr);
     vkDestroySemaphore(device.getDevice(), imageAvailableSemaphores[i], nullptr);
     vkDestroyFence(device.getDevice(), inFlightFences[i], nullptr);
+  }
+
+  // cleanup per-image semaphores
+  for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+    vkDestroySemaphore(device.getDevice(), renderFinishedSemaphores[i], nullptr);
   }
 }
 
@@ -90,7 +94,8 @@ VkResult SwapChain::submitCommandBuffers(const VkCommandBuffer *buffers, uint32_
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = buffers;
 
-  VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+  // Use the semaphore corresponding to this image, not the current frame
+  VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[*imageIndex]};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -336,8 +341,9 @@ void SwapChain::createDepthResources() {
 }
 
 void SwapChain::createSyncObjects() {
+  // Per-frame synchronization: one set per frame in flight
   imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-  renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+  renderFinishedSemaphores.resize(swapChainImages.size());  // One per image, not per frame!
   inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
   imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
 
@@ -348,13 +354,20 @@ void SwapChain::createSyncObjects() {
   fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+  // Create per-frame semaphores
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     if (vkCreateSemaphore(device.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
             VK_SUCCESS ||
-        vkCreateSemaphore(device.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
-            VK_SUCCESS ||
         vkCreateFence(device.getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create synchronization objects for a frame!");
+    }
+  }
+
+  // Create per-image semaphores (one for each swapchain image)
+  for (size_t i = 0; i < swapChainImages.size(); i++) {
+    if (vkCreateSemaphore(device.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
+            VK_SUCCESS) {
+      throw std::runtime_error("failed to create render finished semaphore for image!");
     }
   }
 }

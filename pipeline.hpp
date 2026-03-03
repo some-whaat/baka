@@ -2,64 +2,60 @@
 
 #include "device.hpp"
 
+// std
 #include <string>
 #include <vector>
 
 namespace baka {
 
-// I've desided to give up on my naming convention for this thing as all Vulcan vars named likeThat anyway
 struct PipelineConfigInfo {
-    VkViewport viewport;
-    VkRect2D scissor;
-    // VkPipelineViewportStateCreateInfo viewportInfo;
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-    VkPipelineRasterizationStateCreateInfo rasterizationInfo;
-    VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    VkPipelineColorBlendAttachmentState colorBlendAttachment;
-    VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-    VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-    VkPipelineLayout pipelineLayout = nullptr;
-    VkRenderPass renderPass = nullptr;
-    uint32_t subpass = 0;
+  PipelineConfigInfo(const PipelineConfigInfo&) = delete;
+  PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
+
+  VkPipelineViewportStateCreateInfo viewportInfo;
+  VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+  VkPipelineRasterizationStateCreateInfo rasterizationInfo;
+  VkPipelineMultisampleStateCreateInfo multisampleInfo;
+  VkPipelineColorBlendAttachmentState colorBlendAttachment;
+  VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+  VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+  std::vector<VkDynamicState> dynamicStateEnables;
+  VkPipelineDynamicStateCreateInfo dynamicStateInfo;
+  VkPipelineLayout pipelineLayout = nullptr;
+  VkRenderPass renderPass = nullptr;
+  uint32_t subpass = 0;
 };
 
-
 class Pipeline {
-    public:
-        Pipeline(
-            const std::string& vert_filepath,
-            const std::string& frag_filepath,
-            Device& _device,
-            const PipelineConfigInfo& config_info
-        );
+ public:
+  Pipeline(
+      Device& device,
+      const std::string& vertFilepath,
+      const std::string& fragFilepath,
+      const PipelineConfigInfo& configInfo);
+  ~Pipeline();
 
-        ~Pipeline();
-        
-        Pipeline(const Pipeline&) = delete;
-        Pipeline& operator=(const Pipeline&) = delete;
+  Pipeline(const Pipeline&) = delete;
+  Pipeline& operator=(const Pipeline&) = delete;
 
-        static PipelineConfigInfo defaultPipelineConfigInfo(uint32_t width, uint32_t height);
+  void bind(VkCommandBuffer commandBuffer);
 
-        void bind(VkCommandBuffer command_buffer);
+  static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
-    private:
+ private:
+  static std::vector<char> readFile(const std::string& filepath);
 
-        static std::vector<char> readFile(const std::string& filepath);
+  void createGraphicsPipeline(
+      const std::string& vertFilepath,
+      const std::string& fragFilepath,
+      const PipelineConfigInfo& configInfo);
 
-        void createGraphicsPipeline(
-            const std::string& vert_filepath,
-            const std::string& frag_filepath,
-            const PipelineConfigInfo& config_info
-        );
+  void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
-        void createShaderModule(const std::vector<char>& code, VkShaderModule* shader_module);
-        
-                
-        Device& device;
-        VkPipeline graphics_pipeline;
-        VkShaderModule vert_shader_module;
-        VkShaderModule frag_shader_module;
-
+  Device& device;
+  VkPipeline graphicsPipeline;
+  VkShaderModule vertShaderModule;
+  VkShaderModule fragShaderModule;
 };
 
 }  // namespace baka

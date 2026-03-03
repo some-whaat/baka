@@ -23,6 +23,14 @@ Renderer::Renderer(Window &_window, Device &_device) : window{_window}, device{_
 
 Renderer::~Renderer() { freeCommandBuffers(); }
 
+void Renderer::freeCommandBuffers() {
+  vkFreeCommandBuffers(
+      device.getDevice(),
+      device.getCommandPool(),
+      static_cast<uint32_t>(command_buffers.size()),
+      command_buffers.data());
+  command_buffers.clear();
+}
 
 void Renderer::recreateSwapChain() {
   auto extent = window.getExtent();

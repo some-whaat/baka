@@ -3,8 +3,9 @@
 #include "window.hpp"
 #include "pipeline.hpp"
 #include "device.hpp"
-#include "swap_chain.hpp"
+#include "renderer.hpp"
 #include "model.hpp"
+#include "object.hpp"
 
 // std
 #include <memory>
@@ -33,10 +34,8 @@ class App {
         void loadModels();
         void createPipelineLayout();
         void createPipeline();
-        void createCommandBuffers();
-        void drawFrame();
-        void recreateSwapChain();
-        void recordCommandBuffer(int image_index);
+        void renderObjects(VkCommandBuffer command_buffer);
+
 
         double last_time = glfwGetTime();
         int frame_count = 0;
@@ -44,12 +43,13 @@ class App {
         void updateFrameRate();
 
         Window window{WIDTH, HEIGHT, "YAY, Vulkan!"};
-        Device _device{window};
-        std::unique_ptr<SwapChain> swap_chain;
+        Device device{window};
+        Renderer renderer{window, device};
+        std::vector<Object> objects;
+
         std::unique_ptr<Pipeline> pipeline;//{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
         VkPipelineLayout pipeline_layout;
-        std::vector<VkCommandBuffer> command_buffers;
-        std::unique_ptr<Model> model;
+        // std::unique_ptr<Model> model;
 };
     
 }  // namespace baka
