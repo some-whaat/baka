@@ -1,4 +1,4 @@
-#include "app_class.hpp"
+#include "app.hpp"
 
 // std
 #include <array>
@@ -158,10 +158,10 @@ void App::recordCommandBuffer(int image_index) {
   pipeline->bind(command_buffers[image_index]);
   // vkCmdDraw(command_buffers[image_index], 3, 1, 0, 0);
 
-  for (int j = 0; j < 4; j++) {
+  for (int j = 0; j < 8; j++) {
     PushConstantData push{};
     push.offset = {0.5*sin(anim + j*-0.3), 0.5*cos(anim + j*-0.3)};
-    push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
+    push.color = {0.0f, 0.0f, 1.f - 0.125f * j};
 
     vkCmdPushConstants(
       command_buffers[image_index],
