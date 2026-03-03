@@ -140,76 +140,76 @@ void Pipeline::bind(VkCommandBuffer command_buffer) {
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 }
 
-PipelineConfigInfo Pipeline::defaultPipelineConfigInfo(uint32_t width, uint32_t height) {
-    PipelineConfigInfo config_info{};
+void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
+    
+  configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
-    config_info.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    config_info.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    config_info.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+  configInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  configInfo.viewportInfo.viewportCount = 1;
+  configInfo.viewportInfo.pViewports = nullptr;
+  configInfo.viewportInfo.scissorCount = 1;
+  configInfo.viewportInfo.pScissors = nullptr;
 
-    config_info.viewport.x = 0.0f;
-    config_info.viewport.y = 0.0f;
-    config_info.viewport.width = static_cast<float>(width);
-    config_info.viewport.height = static_cast<float>(height);
-    config_info.viewport.minDepth = 0.0f;
-    config_info.viewport.maxDepth = 1.0f;
+  configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;
+  configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
+  configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
+  configInfo.rasterizationInfo.lineWidth = 1.0f;
+  configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
+  configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
+  configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
+  configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional
+  configInfo.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional
 
-    config_info.scissor.offset = {0, 0};
-    config_info.scissor.extent = {width, height};
+  configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
+  configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  configInfo.multisampleInfo.minSampleShading = 1.0f;           // Optional
+  configInfo.multisampleInfo.pSampleMask = nullptr;             // Optional
+  configInfo.multisampleInfo.alphaToCoverageEnable = VK_FALSE;  // Optional
+  configInfo.multisampleInfo.alphaToOneEnable = VK_FALSE;       // Optional
 
-    config_info.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    config_info.rasterizationInfo.depthClampEnable = VK_FALSE;
-    config_info.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
-    config_info.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    config_info.rasterizationInfo.lineWidth = 1.0f;
-    config_info.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
-    config_info.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    config_info.rasterizationInfo.depthBiasEnable = VK_FALSE;
-    config_info.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
-    config_info.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional
-    config_info.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional
+  configInfo.colorBlendAttachment.colorWriteMask =
+      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+      VK_COLOR_COMPONENT_A_BIT;
+  configInfo.colorBlendAttachment.blendEnable = VK_FALSE;
+  configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+  configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+  configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
+  configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+  configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+  configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
 
-    config_info.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    config_info.multisampleInfo.sampleShadingEnable = VK_FALSE;
-    config_info.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    config_info.multisampleInfo.minSampleShading = 1.0f;           // Optional
-    config_info.multisampleInfo.pSampleMask = nullptr;             // Optional
-    config_info.multisampleInfo.alphaToCoverageEnable = VK_FALSE;  // Optional
-    config_info.multisampleInfo.alphaToOneEnable = VK_FALSE;       // Optional
+  configInfo.colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  configInfo.colorBlendInfo.logicOpEnable = VK_FALSE;
+  configInfo.colorBlendInfo.logicOp = VK_LOGIC_OP_COPY;  // Optional
+  configInfo.colorBlendInfo.attachmentCount = 1;
+  configInfo.colorBlendInfo.pAttachments = &configInfo.colorBlendAttachment;
+  configInfo.colorBlendInfo.blendConstants[0] = 0.0f;  // Optional
+  configInfo.colorBlendInfo.blendConstants[1] = 0.0f;  // Optional
+  configInfo.colorBlendInfo.blendConstants[2] = 0.0f;  // Optional
+  configInfo.colorBlendInfo.blendConstants[3] = 0.0f;  // Optional
 
-    config_info.colorBlendAttachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-        VK_COLOR_COMPONENT_A_BIT;
-    config_info.colorBlendAttachment.blendEnable = VK_FALSE;
-    config_info.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-    config_info.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-    config_info.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-    config_info.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-    config_info.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-    config_info.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+  configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
+  configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
+  configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+  configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+  configInfo.depthStencilInfo.minDepthBounds = 0.0f;  // Optional
+  configInfo.depthStencilInfo.maxDepthBounds = 1.0f;  // Optional
+  configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
+  configInfo.depthStencilInfo.front = {};  // Optional
+  configInfo.depthStencilInfo.back = {};   // Optional
 
-    config_info.colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    config_info.colorBlendInfo.logicOpEnable = VK_FALSE;
-    config_info.colorBlendInfo.logicOp = VK_LOGIC_OP_COPY;  // Optional
-    config_info.colorBlendInfo.attachmentCount = 1;
-    config_info.colorBlendInfo.pAttachments = &config_info.colorBlendAttachment;
-    config_info.colorBlendInfo.blendConstants[0] = 0.0f;  // Optional
-    config_info.colorBlendInfo.blendConstants[1] = 0.0f;  // Optional
-    config_info.colorBlendInfo.blendConstants[2] = 0.0f;  // Optional
-    config_info.colorBlendInfo.blendConstants[3] = 0.0f;  // Optional
-
-    config_info.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    config_info.depthStencilInfo.depthTestEnable = VK_TRUE;
-    config_info.depthStencilInfo.depthWriteEnable = VK_TRUE;
-    config_info.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-    config_info.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-    config_info.depthStencilInfo.minDepthBounds = 0.0f;  // Optional
-    config_info.depthStencilInfo.maxDepthBounds = 1.0f;  // Optional
-    config_info.depthStencilInfo.stencilTestEnable = VK_FALSE;
-    config_info.depthStencilInfo.front = {};  // Optional
-    config_info.depthStencilInfo.back = {};   // Optional
-
-    return config_info;
+  configInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+  configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+  configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
+  configInfo.dynamicStateInfo.dynamicStateCount =
+      static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
+  configInfo.dynamicStateInfo.flags = 0;
 }
 
 }  // namespace baka

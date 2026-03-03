@@ -13,7 +13,7 @@ class Model {
     public:
 
         struct Vertex {
-            glm::vec2 position;
+            glm::vec3 position;
             glm::vec3 color;
 
             static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
@@ -28,6 +28,8 @@ class Model {
 
         void bind(VkCommandBuffer command_buffer);
         void draw(VkCommandBuffer command_buffer);
+
+        // void apply_transform(const glm::mat4& transf);
 
     private:
         

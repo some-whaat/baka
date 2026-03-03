@@ -1,4 +1,4 @@
-#include "app_class.hpp"
+#include "app.hpp"
 
 #include <cstdlib>
 #include <iostream>

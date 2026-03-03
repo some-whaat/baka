@@ -5,6 +5,9 @@
 #include "device.hpp"
 #include "swap_chain.hpp"
 #include "model.hpp"
+#include "object.hpp"
+#include "render_system.hpp"
+#include "renderer.hpp"
 
 // std
 #include <memory>
@@ -30,7 +33,7 @@ class App {
 
 
     private:
-        void loadModels();
+        void loadObjs();
         void createPipelineLayout();
         void createPipeline();
         void createCommandBuffers();
@@ -45,11 +48,13 @@ class App {
 
         Window window{WIDTH, HEIGHT, "YAY, Vulkan!"};
         Device _device{window};
-        std::unique_ptr<SwapChain> swap_chain;
-        std::unique_ptr<Pipeline> pipeline;//{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
-        VkPipelineLayout pipeline_layout;
-        std::vector<VkCommandBuffer> command_buffers;
-        std::unique_ptr<Model> model;
+        Renderer renderer{window, _device};
+        // std::unique_ptr<SwapChain> swap_chain;
+        // std::unique_ptr<Pipeline> pipeline;//{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
+        // VkPipelineLayout pipeline_layout;
+        // std::vector<VkCommandBuffer> command_buffers;
+
+        std::vector<Object> objects;
 };
     
 }  // namespace baka

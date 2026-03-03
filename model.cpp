@@ -69,4 +69,8 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
   return attribute_descriptions;
 }
 
+// void Model::apply_transform(const glm::mat4& transf) {
+//   /// I feel like this is not the best idea???????????
+// }
+
 } // namespace baka
