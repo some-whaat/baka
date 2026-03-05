@@ -7,8 +7,8 @@ layout(location = 0) out vec3 frag_color;
 
 layout(push_constant) uniform Push {
     mat4 trans;
-    float time;
-    vec3 color;
+    // float time;
+    // vec3 color;
 } push;
 
 

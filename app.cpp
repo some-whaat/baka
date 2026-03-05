@@ -15,6 +15,7 @@ namespace baka {
 
 App::App() {
   loadObjects();
+  camera.setOrthographicProj(-1, 1, -1, 1, 0, 1);
 }
 
 App::~App() {}
@@ -27,7 +28,7 @@ void App::run() {
     
     if (auto command_buffer = renderer.beginFrame()) {
       renderer.beginSwapChainRenderPass(command_buffer);
-      render_system.renderObjects(command_buffer, objects);
+      render_system.renderObjects(command_buffer, objects, camera);
       renderer.endSwapChainRenderPass(command_buffer);
       renderer.endFrame();
        

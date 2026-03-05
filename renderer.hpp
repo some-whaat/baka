@@ -1,3 +1,5 @@
+// responcble for device and swap_chain, drawing to the window. calculates fps too
+
 #pragma once
 
 #include "window.hpp"

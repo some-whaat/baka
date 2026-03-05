@@ -1,3 +1,5 @@
+// responsble for pipline
+
 #pragma once
 
 #include "pipeline.hpp"
@@ -24,7 +26,7 @@ class RenderSystem {
         RenderSystem(const RenderSystem&) = delete;
         RenderSystem &operator=(const RenderSystem&) = delete;
 
-        void renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects);
+        void renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera);
 
     private:
         void createPipelineLayout();

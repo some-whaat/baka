@@ -13,9 +13,9 @@ namespace baka {
   	
 struct PushConstantData {
   glm::mat4 transform{1.f};
-  float time;
+//   float time;
   // glm::vec2 offset;
-  alignas(16) glm::vec3 color;
+//   alignas(16) glm::vec3 color;
   
 };
 
@@ -27,7 +27,7 @@ RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_
 RenderSystem::~RenderSystem() { vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr); }
 
 
-void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects) {
+void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera) {
   pipeline->bind(command_buffer);
 
   static float anim = 0;
@@ -37,14 +37,18 @@ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Obj
   for (auto& obj : objects) {
     obj.transform.rot.y = obj.transform.rot.y + 0.01f;
     obj.transform.rot.x = obj.transform.rot.x + 0.02f;
-    // std::cout << obj.transform.rot.y;
 
     PushConstantData push{};
     // push.offset = obj.transform.pos;
     // push.color = obj.color;
-    glm::mat4 maat = obj.transform.getMat4();
+
+    // =========================================================================|
+    glm::mat4 maat = obj.transform.getMat4() * camera.getProjection(); // <====== TEMPORARY (better send both and calculate on GPU)
+    // =========================================================================|
+    
     push.transform = maat;
-    push.time = anim;
+    
+    // push.time = anim;
     // std::cout << maat[0][0];
     // push.rot = obj.transform.rot.x;
 

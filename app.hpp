@@ -5,6 +5,7 @@
 #include "renderer.hpp"
 #include "model.hpp"
 #include "object.hpp"
+#include "camera.hpp"
 
 // std
 #include <memory>
@@ -36,6 +37,7 @@ class App {
         Device device{window};
         Renderer renderer{window, device};
         std::vector<Object> objects;
+        Camera camera{};
 };
     
 }  // namespace baka
