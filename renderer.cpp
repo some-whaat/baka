@@ -57,98 +57,6 @@ void Renderer::createCommandBuffers() {
   }
 }
 
-// void Renderer::recordCommandBuffer(int image_index) {
-
-// //   static float anim = 0;
-
-// //   anim += 0.01;
-
-
-// //   for (int i = 0; i < command_buffers.size(); i++) {
-// //   VkCommandBufferBeginInfo beginInfo{};
-// //   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-// //   if (vkBeginCommandBuffer(command_buffers[image_index], &beginInfo) != VK_SUCCESS) {
-// //     throw std::runtime_error("failed to begin recording command buffer!");
-// //   }
-
-// //   VkRenderPassBeginInfo renderPassInfo{};
-// //   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-// //   renderPassInfo.renderPass = swap_chain->getRenderPass();
-// //   renderPassInfo.framebuffer = swap_chain->getFrameBuffer(image_index);
-
-// //   renderPassInfo.renderArea.offset = {0, 0};
-// //   renderPassInfo.renderArea.extent = swap_chain->getSwapChainExtent();
-
-// //   std::array<VkClearValue, 2> clearValues{};
-// //   clearValues[0].color = {0.6f, 0.18f, 0.46f, 1.0f};
-// //   clearValues[1].depthStencil = {1.0f, 0};
-// //   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-// //   renderPassInfo.pClearValues = clearValues.data();
-
-// //   vkCmdBeginRenderPass(command_buffers[image_index], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-// //   pipeline->bind(command_buffers[image_index]);
-// //   model->bind(command_buffers[image_index]);
-// //   pipeline->bind(command_buffers[image_index]);
-
-
-//   // vkCmdDraw(command_buffers[image_index], 3, 1, 0, 0);
-
-//   for (int j = 0; j < 8; j++) {
-//     PushConstantData push{};
-//     push.offset = {0.5*sin(anim + j*-0.3), 0.5*cos(anim + j*-0.3)};
-//     push.color = {0.0f, 0.0f, 1.f - 0.125f * j};
-
-//     vkCmdPushConstants(
-//       command_buffers[image_index],
-//       pipeline_layout,
-//       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-//       0,
-//       sizeof(PushConstantData),
-//       &push
-//     );
-
-//     model->draw(command_buffers[image_index]);
-//   }
-
-//     vkCmdEndRenderPass(command_buffers[image_index]);
-//     // if (vkEndCommandBuffer(command_buffers[image_index]) != VK_SUCCESS) {
-//     //   throw std::runtime_error("failed to record command buffer!");
-//     // }
-
-// }
-
-// void Renderer::drawFrame() {
-
-//   uint32_t image_index;
-// //   auto result = swap_chain->acquireNextImage(&image_index);
-  
-// //   // if resized
-// //   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-// //     recreateSwapChain();
-// //     return;
-// //   }
-
-// //   if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-// //     throw std::runtime_error("failed to acquire swap chain image!");
-// //   }
-
-// //   recordCommandBuffer(image_index);
-// //   result = swap_chain->submitCommandBuffers(&command_buffers[image_index], &image_index);
-// //   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
-// //     window.resetFramebufferResized();
-// //     recreateSwapChain();
-// //     return;
-// //   }
-  
-// //   if (result != VK_SUCCESS) {
-// //     throw std::runtime_error("failed to present swap chain image!");
-// //   }
-
-//   updateFrameRate();
-// }
-
 void Renderer::updateFrameRate() {
     double current_time = glfwGetTime();
     frame_count++;
@@ -212,6 +120,7 @@ void Renderer::endFrame() {
 //   }
 
 //   recordCommandBuffer(image_index);
+
   auto result = swap_chain->submitCommandBuffers(&command_buffer, &curr_img_index);
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
     window.resetFramebufferResized();
@@ -223,7 +132,8 @@ void Renderer::endFrame() {
   }
 
   is_frame_started = false;
-//   currentFrameIndex = (currentFrameIndex + 1) % swap_chain::MAX_FRAMES_IN_FLIGHT;
+
+  updateFrameRate();
 }
 
 void Renderer::beginSwapChainRenderPass(VkCommandBuffer command_buffer) {

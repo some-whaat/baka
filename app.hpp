@@ -1,7 +1,6 @@
 #pragma once
 
 #include "window.hpp"
-#include "pipeline.hpp"
 #include "device.hpp"
 #include "renderer.hpp"
 #include "model.hpp"
@@ -16,10 +15,8 @@ namespace baka {
 class App {
 
     public:
-        static constexpr int WIDTH = 1600;
-        static constexpr int HEIGHT = 1200;
-
-        float fps = 0;
+        static constexpr int WIDTH = 2000;
+        static constexpr int HEIGHT = 2000;
 
         App();
         ~App();
@@ -31,14 +28,7 @@ class App {
 
 
     private:
-        void loadModels();
-        void createPipelineLayout();
-        void createPipeline();
-        void renderObjects(VkCommandBuffer command_buffer);
-
-
-        double last_time = glfwGetTime();
-        int frame_count = 0;
+        void loadObjects();
 
         void updateFrameRate();
 
@@ -46,10 +36,6 @@ class App {
         Device device{window};
         Renderer renderer{window, device};
         std::vector<Object> objects;
-
-        std::unique_ptr<Pipeline> pipeline;//{"shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv", device, Pipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
-        VkPipelineLayout pipeline_layout;
-        // std::unique_ptr<Model> model;
 };
     
 }  // namespace baka
