@@ -30,9 +30,10 @@ RenderSystem::~RenderSystem() { vkDestroyPipelineLayout(device.getDevice(), pipe
 void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera) {
   pipeline->bind(command_buffer);
 
-  static float anim = 0;
+//   static float anim = 0;
+//   anim += 0.01f;
 
-  anim += 0.01f;
+    auto projection_view = camera.getProjection() * camera.getView();
 
   for (auto& obj : objects) {
     obj.transform.rot.y = obj.transform.rot.y + 0.01f;
@@ -43,7 +44,7 @@ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Obj
     // push.color = obj.color;
 
     // =========================================================================|
-    glm::mat4 maat = camera.getProjection() * obj.transform.getMat4(); // <====== TEMPORARY (better send both and calculate on GPU)
+    glm::mat4 maat = projection_view * obj.transform.getMat4(); // <====== TEMPORARY (better send both and calculate on GPU)
     // =========================================================================|
     
     push.transform = maat;

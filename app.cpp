@@ -16,6 +16,7 @@ namespace baka {
 App::App() {
   loadObjects();
   camera.setOrthographicProj(-1, 1, -1, 1, -1, 1);
+  camera.setViewDirection(glm::vec3(0.f), glm::vec3(0.3f, 0.f, 1.0f));
 }
 
 App::~App() {}
