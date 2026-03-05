@@ -43,7 +43,7 @@ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Obj
     // push.color = obj.color;
 
     // =========================================================================|
-    glm::mat4 maat = obj.transform.getMat4() * camera.getProjection(); // <====== TEMPORARY (better send both and calculate on GPU)
+    glm::mat4 maat = camera.getProjection() * obj.transform.getMat4(); // <====== TEMPORARY (better send both and calculate on GPU)
     // =========================================================================|
     
     push.transform = maat;

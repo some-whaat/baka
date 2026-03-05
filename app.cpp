@@ -15,7 +15,7 @@ namespace baka {
 
 App::App() {
   loadObjects();
-  camera.setOrthographicProj(-1, 1, -1, 1, 0, 1);
+  camera.setOrthographicProj(-1, 1, -1, 1, -1, 1);
 }
 
 App::~App() {}
@@ -25,7 +25,14 @@ void App::run() {
 
   while (!window.shouldClose()) {
     glfwPollEvents();
-    
+
+    float aspect = renderer.getAspectRatio();
+    // ============================================================|
+    // camera.setOrthographicProj(-aspect, aspect, -1, 1, -1, 1);// <=| works correctly only if top, bottom are 1, -1
+    // ============================================================|
+    camera.setPerspectiveProj(glm::radians(50.f), aspect, 0.1f, 10);
+
+
     if (auto command_buffer = renderer.beginFrame()) {
       renderer.beginSwapChainRenderPass(command_buffer);
       render_system.renderObjects(command_buffer, objects, camera);
@@ -106,7 +113,7 @@ void App::loadObjects() {
   auto cube = Object();
   cube.model = model;
   // cube.color = {.1f, .8f, .1f};
-  cube.transform.pos = {0.0f, .0f, 0.5f,};
+  cube.transform.pos = {0.0f, .0f, 5.f,};
   cube.transform.scale = {.5f, .5f, .5f};
   cube.transform.rot = {0.f, 0.f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
 
