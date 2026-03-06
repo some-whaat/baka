@@ -57,19 +57,6 @@ void Renderer::createCommandBuffers() {
   }
 }
 
-void Renderer::updateFrameRate() {
-    double current_time = glfwGetTime();
-    frame_count++;
-    
-    if (current_time - last_time >= 1.0) {
-        fps = frame_count / (current_time - last_time);
-        frame_count = 0;
-        last_time = current_time;
-    }
-
-    window.changeTitle("fps: " + std::to_string(fps));
-}
-
 VkCommandBuffer Renderer::beginFrame() {
   assert(!is_frame_started && "Can't call beginFrame while already in progress");
 
@@ -132,8 +119,6 @@ void Renderer::endFrame() {
   }
 
   is_frame_started = false;
-
-  updateFrameRate();
 }
 
 void Renderer::beginSwapChainRenderPass(VkCommandBuffer command_buffer) {

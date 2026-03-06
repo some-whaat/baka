@@ -16,7 +16,7 @@ namespace baka {
 
         Transform() {}
 
-        glm::mat4 getMat4() {
+        glm::mat4 getMat4() { // get transform in world space
             
             // float c3 = 1.f;
             // float s3 = 0.f;

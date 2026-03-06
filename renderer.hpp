@@ -59,11 +59,6 @@ class Renderer {
         uint32_t curr_img_index;
         bool is_frame_started = false;
 
-        double last_time = glfwGetTime();
-        int frame_count = 0;
-
-        void updateFrameRate();
-
         Window& window;
         Device& device;
 

@@ -26,7 +26,7 @@ class RenderSystem {
         RenderSystem(const RenderSystem&) = delete;
         RenderSystem &operator=(const RenderSystem&) = delete;
 
-        void renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera);
+        void renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time);
 
     private:
         void createPipelineLayout();

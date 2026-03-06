@@ -24,9 +24,25 @@ App::~App() {}
 void App::run() {
   RenderSystem render_system{device, renderer.getSwapChainRenderPass()};
 
+  double current_time = glfwGetTime();
+
+  static int frame_count = 0;
+
   while (!window.shouldClose()) {
     glfwPollEvents();
+    
+    double new_time = glfwGetTime();
+    double frame_time =  new_time - current_time;
+    current_time = new_time;
+    
+    
+    if (frame_count >= 60) {
+      double fps = 1./frame_time;
+      window.changeTitle("fps: " + std::to_string(fps));
+      frame_count = 0;
+    }
 
+    
     float aspect = renderer.getAspectRatio();
     // ============================================================|
     // camera.setOrthographicProj(-aspect, aspect, -1, 1, -1, 1);// <=| works correctly only if top, bottom are 1, -1
@@ -36,12 +52,13 @@ void App::run() {
 
     if (auto command_buffer = renderer.beginFrame()) {
       renderer.beginSwapChainRenderPass(command_buffer);
-      render_system.renderObjects(command_buffer, objects, camera);
+      render_system.renderObjects(command_buffer, objects, camera, /* TEMPORARY, delete */ frame_time);
       renderer.endSwapChainRenderPass(command_buffer);
       renderer.endFrame();
        
     }
 
+    frame_count += 1;
   }
   vkDeviceWaitIdle(device.getDevice());
 }

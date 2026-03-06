@@ -27,7 +27,7 @@ RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_
 RenderSystem::~RenderSystem() { vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr); }
 
 
-void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera) {
+void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time) {
   pipeline->bind(command_buffer);
 
 //   static float anim = 0;
@@ -36,8 +36,8 @@ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Obj
     auto projection_view = camera.getProjection() * camera.getView();
 
   for (auto& obj : objects) {
-    obj.transform.rot.y = obj.transform.rot.y + 0.01f;
-    obj.transform.rot.x = obj.transform.rot.x + 0.02f;
+    obj.transform.rot.y = obj.transform.rot.y + frame_time;
+    obj.transform.rot.x = obj.transform.rot.x + frame_time * 2.f;
 
     PushConstantData push{};
     // push.offset = obj.transform.pos;
