@@ -6,13 +6,19 @@
 
 namespace baka {
 
-Model::Model(Device& _device, const std::vector<Vertex> &vertices) : device(_device) {
-    createVertexBuffers(vertices);
+Model::Model(Device &_device, const Model::Builder &builder) : device(_device) {
+    createVertexBuffers(builder.vertices);
+    createIndexBuffers(builder.indices);
 }
 
 Model::~Model() {
     vkDestroyBuffer(device.getDevice(), vertex_buffer, nullptr);
     vkFreeMemory(device.getDevice(), vertex_buffer_memory, nullptr);
+
+    if (has_index_buffer) {
+      vkDestroyBuffer(device.getDevice(), index_buffer, nullptr);
+      vkFreeMemory(device.getDevice(), index_buffer_memory, nullptr);
+    }
 }
 
 void Model::createVertexBuffers(const std::vector<Vertex> &vertices) {
@@ -33,14 +39,49 @@ void Model::createVertexBuffers(const std::vector<Vertex> &vertices) {
   vkUnmapMemory(device.getDevice(), vertex_buffer_memory);
 }
 
+void Model::createIndexBuffers(const std::vector<uint32_t> &indices) {
+  index_count = static_cast<uint32_t>(indices.size());
+
+  has_index_buffer = index_count > 0;
+
+  if (!has_index_buffer) {
+    return;
+  }
+
+  VkDeviceSize buffer_size = sizeof(indices[0]) * index_count;
+  device.createBuffer(
+      buffer_size,
+      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      index_buffer,
+      index_buffer_memory);
+
+  void *data;
+  vkMapMemory(device.getDevice(), index_buffer_memory, 0, buffer_size, 0, &data);
+  memcpy(data, indices.data(), static_cast<size_t>(buffer_size)); // copyies data from host (cpu) to device (gpu)
+  vkUnmapMemory(device.getDevice(), index_buffer_memory);
+}
+
+
 void Model::draw(VkCommandBuffer command_buffer) {
-  vkCmdDraw(command_buffer, vertex_count, 1, 0, 0);
+  if (has_index_buffer) {
+
+    vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
+  } 
+  else {
+
+    vkCmdDraw(command_buffer, vertex_count, 1, 0, 0);
+  }
 }
 
 void Model::bind(VkCommandBuffer command_buffer) {
   VkBuffer buffers[] = {vertex_buffer};
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(command_buffer, 0, 1, buffers, offsets);
+
+  if (has_index_buffer) {
+    vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
+  }
 }
 
 std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions() {
