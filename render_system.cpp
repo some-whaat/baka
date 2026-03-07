@@ -14,8 +14,8 @@ namespace baka {
 struct PushConstantData {
   glm::mat4 transform{1.f};
 //   float time;
-  // glm::vec2 offset;
-//   alignas(16) glm::vec3 color;
+  // glm::vec3 normal;
+  //  alignas(16) glm::vec3 color;
   
 };
 
@@ -37,7 +37,7 @@ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Obj
 
   for (auto& obj : objects) {
     obj.transform.rot.y = obj.transform.rot.y + frame_time;
-    obj.transform.rot.x = obj.transform.rot.x + frame_time * 2.f;
+    obj.transform.rot.x = 90;
 
     PushConstantData push{};
     // push.offset = obj.transform.pos;
