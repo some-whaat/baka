@@ -16,7 +16,7 @@ namespace baka {
 App::App() {
   loadObjects();
   camera.setOrthographicProj(-1, 1, -1, 1, -1, 1);
-  camera.setViewDirection(glm::vec3(0.f), glm::vec3(0.3f, 0.f, 1.0f));
+  camera.setViewDirection(glm::vec3(0.f), glm::vec3(0.0f, 0.f, 1.0f));
 }
 
 App::~App() {}
@@ -119,12 +119,12 @@ std::unique_ptr<Model> createCubeModel(Device& device) {
 
 void App::loadObjects() {
 
-  std::shared_ptr<Model> model = createCubeModel(device);
+  std::shared_ptr<Model> model = Model::createModelFromFile(device, "/home/somewhat/projects/grathics_stuff/baka/models/cute_building/viking_room.obj"); // createCubeModel(device);
 
   auto cube = Object();
   cube.model = model;
   // cube.color = {.1f, .8f, .1f};
-  cube.transform.pos = {0.0f, .0f, 5.f,};
+  cube.transform.pos = {0.0f, .0f, 3.f,};
   cube.transform.scale = {.5f, .5f, .5f};
   cube.transform.rot = {0.f, 0.f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
 
