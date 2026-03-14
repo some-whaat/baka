@@ -14,7 +14,7 @@ layout(push_constant) uniform Push {
     // vec3 color;
 } push;
 
-vec3 light_dir = vec3(0.35, -0.5, 0.15);
+vec3 light_dir = vec3(0.45, 0.5, 0.05);
 const float ambient = 0.1;
 
 void main() {

@@ -19,12 +19,16 @@ struct PushConstantData {
   
 };
 
+
+
 RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_device} {
   createPipelineLayout();
   createPipeline(render_pass);
 }
 
-RenderSystem::~RenderSystem() { vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr); }
+RenderSystem::~RenderSystem() {
+  vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr);
+ }
 
 
 void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time) {

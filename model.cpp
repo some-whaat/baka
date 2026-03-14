@@ -159,6 +159,11 @@ void Model::Builder::loadModel(const std::string &filepath) {
     throw std::runtime_error(warn + err);
   }
 
+  std::cout << materials.size();
+  // if (!materials[0].diffuse_texname.empty()) {
+  //   std::cout << "  Diffuse texture (map_Kd): " << materials[0].diffuse_texname << std::endl;
+  // }
+
   vertices.clear();
   indices.clear();
 
@@ -197,7 +202,7 @@ void Model::Builder::loadModel(const std::string &filepath) {
       if (index.texcoord_index >= 0) {
         vertex.uv = {
             attrib.texcoords[2 * index.texcoord_index + 0],
-            attrib.texcoords[2 * index.texcoord_index + 1],
+            1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
         };
       }
 
