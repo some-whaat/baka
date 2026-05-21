@@ -28,85 +28,153 @@ RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_
 
 RenderSystem::~RenderSystem() { vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr); }
 
-
-void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time) {
-  pipeline->bind(command_buffer);
-
-//   static float anim = 0;
-//   anim += 0.01f;
-
-    auto projection_view = camera.getProjection() * camera.getView();
-
-  for (auto& obj : objects) {
-     // For each object allocate+update a descriptor set that points to its texture, then bind it
-    VkDescriptorSet localDescriptorSet = VK_NULL_HANDLE;
-    if (obj.texture) {
-      VkDescriptorSetAllocateInfo allocInfo{};
-      allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-      allocInfo.descriptorPool = descriptorPool;
-      allocInfo.descriptorSetCount = 1;
-      allocInfo.pSetLayouts = &descriptorSetLayout;
-
-      if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &localDescriptorSet) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate descriptor set for object!");
-      }
-
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      imageInfo.imageView = obj.texture->getImageView();
-      imageInfo.sampler = obj.texture->getSampler();
-
-      VkWriteDescriptorSet descriptorWrite{};
-      descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      descriptorWrite.dstSet = localDescriptorSet;
-      descriptorWrite.dstBinding = 0;
-      descriptorWrite.dstArrayElement = 0;
-      descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      descriptorWrite.descriptorCount = 1;
-      descriptorWrite.pImageInfo = &imageInfo;
-
-      vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
-
-      vkCmdBindDescriptorSets(
-          command_buffer,
-          VK_PIPELINE_BIND_POINT_GRAPHICS,
-          pipeline_layout,
-          0,
-          1,
-          &localDescriptorSet,
-          0,
-          nullptr);
+void RenderSystem::setupObjectDescriptors(std::vector<Object>& objects) {
+    for (auto& obj : objects) {
+        if (!obj.texture) continue;
+        
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &descriptorSetLayout;
+        
+        if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &obj.descriptor_set) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate descriptor set!");
+        }
+        
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = obj.texture->getImageView();
+        imageInfo.sampler = obj.texture->getSampler();
+        
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = obj.descriptor_set;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
+        
+        vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
     }
-
-    obj.transform.rot.y = obj.transform.rot.y + frame_time;
-    obj.transform.rot.x = 90;
-
-    PushConstantData push{};
-    // push.offset = obj.transform.pos;
-    // push.color = obj.color;
-
-    // =========================================================================|
-    glm::mat4 maat = projection_view * obj.transform.getMat4(); // <====== TEMPORARY (better send both and calculate on GPU)
-    // =========================================================================|
-    
-    push.transform = maat;
-    
-    // push.time = anim;
-    // std::cout << maat[0][0];
-    // push.rot = obj.transform.rot.x;
-
-    vkCmdPushConstants(
-        command_buffer,
-        pipeline_layout,
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0,
-        sizeof(PushConstantData),
-        &push);
-      
-    obj.model->bind(command_buffer);
-    obj.model->draw(command_buffer);
-  }
 }
+
+// Simplified render function
+void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time) {
+    pipeline->bind(command_buffer);
+    auto projection_view = camera.getProjection() * camera.getView();
+    
+    for (auto& obj : objects) {
+        // Just bind the pre-allocated descriptor set
+        if (obj.texture && obj.descriptor_set != VK_NULL_HANDLE) {
+            vkCmdBindDescriptorSets(
+                command_buffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline_layout,
+                0, 1, &obj.descriptor_set,
+                0, nullptr);
+        }
+        
+        // Update transform (rotation)
+        obj.transform.rot.y += frame_time;
+        obj.transform.rot.x = 90;
+        
+        // Push constants
+        PushConstantData push{};
+        push.transform = projection_view * obj.transform.getMat4();
+        
+        vkCmdPushConstants(
+            command_buffer,
+            pipeline_layout,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(PushConstantData),
+            &push);
+        
+        obj.model->bind(command_buffer);
+        obj.model->draw(command_buffer);
+    }
+}
+
+// void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time) {
+//   pipeline->bind(command_buffer);
+
+// //   static float anim = 0;
+// //   anim += 0.01f;
+
+//     auto projection_view = camera.getProjection() * camera.getView();
+
+//   for (auto& obj : objects) {
+//      // For each object allocate+update a descriptor set that points to its texture, then bind it
+//     VkDescriptorSet localDescriptorSet = VK_NULL_HANDLE;
+//     if (obj.texture) {
+//       VkDescriptorSetAllocateInfo allocInfo{};
+//       allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+//       allocInfo.descriptorPool = descriptorPool;
+//       allocInfo.descriptorSetCount = 1;
+//       allocInfo.pSetLayouts = &descriptorSetLayout;
+
+//       if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &localDescriptorSet) != VK_SUCCESS) {
+//         throw std::runtime_error("failed to allocate descriptor set for object!");
+//       }
+
+//       VkDescriptorImageInfo imageInfo{};
+//       imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//       imageInfo.imageView = obj.texture->getImageView();
+//       imageInfo.sampler = obj.texture->getSampler();
+
+//       VkWriteDescriptorSet descriptorWrite{};
+//       descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//       descriptorWrite.dstSet = localDescriptorSet;
+//       descriptorWrite.dstBinding = 0;
+//       descriptorWrite.dstArrayElement = 0;
+//       descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//       descriptorWrite.descriptorCount = 1;
+//       descriptorWrite.pImageInfo = &imageInfo;
+
+//       vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
+
+//       vkCmdBindDescriptorSets(
+//           command_buffer,
+//           VK_PIPELINE_BIND_POINT_GRAPHICS,
+//           pipeline_layout,
+//           0,
+//           1,
+//           &localDescriptorSet,
+//           0,
+//           nullptr);
+//     }
+
+//     obj.transform.rot.y = obj.transform.rot.y + frame_time;
+//     obj.transform.rot.x = 90;
+
+//     PushConstantData push{};
+//     // push.offset = obj.transform.pos;
+//     // push.color = obj.color;
+
+//     // =========================================================================|
+//     glm::mat4 maat = projection_view * obj.transform.getMat4(); // <====== TEMPORARY (better send both and calculate on GPU)
+//     // =========================================================================|
+    
+//     push.transform = maat;
+    
+//     // push.time = anim;
+//     // std::cout << maat[0][0];
+//     // push.rot = obj.transform.rot.x;
+
+//     vkCmdPushConstants(
+//         command_buffer,
+//         pipeline_layout,
+//         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+//         0,
+//         sizeof(PushConstantData),
+//         &push);
+      
+//     obj.model->bind(command_buffer);
+//     obj.model->draw(command_buffer);
+//   }
+// }
 
 void RenderSystem::createPipelineLayout() {
   VkPushConstantRange pushConstantRange{};
@@ -180,6 +248,38 @@ void RenderSystem::createDescriptorPool() {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 }
+
+// void RenderSystem::createDescriptorSet() {
+//     // Allocate  set
+//     VkDescriptorSetAllocateInfo allocInfo{};
+//     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+//     allocInfo.descriptorPool = descriptorPool;
+//     allocInfo.descriptorSetCount = 1;
+//     allocInfo.pSetLayouts = &descriptorSetLayout;
+    
+//     if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &descriptor_set) != VK_SUCCESS) {
+//         throw std::runtime_error("failed to allocate descriptor set!");
+//     }
+    
+//     // Update descriptor set with texture information
+//     VkDescriptorImageInfo imageInfo{};
+//     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//     imageInfo.imageView = texture->getImageView();
+//     imageInfo.sampler = texture->getSampler();
+    
+//     VkWriteDescriptorSet descriptorWrite{};
+//     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//     descriptorWrite.dstSet = descriptor_set;
+//     descriptorWrite.dstBinding = 0;  // Must match the binding in shader
+//     descriptorWrite.dstArrayElement = 0;
+//     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//     descriptorWrite.descriptorCount = 1;
+//     descriptorWrite.pImageInfo = &imageInfo;
+//     descriptorWrite.pBufferInfo = nullptr;      // Not used for images
+//     descriptorWrite.pTexelBufferView = nullptr; // Not used for images
+    
+//     vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
+// }
 
 
 // void RenderSystem::updateFrameRate() {

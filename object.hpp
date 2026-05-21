@@ -86,6 +86,7 @@ namespace baka {
         // glm::vec3 color;
         std::shared_ptr<Model> model;
         std::shared_ptr<Texture> texture;
+        VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
 
         Object() {};
 

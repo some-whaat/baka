@@ -35,6 +35,11 @@ class RenderSystem {
         std::vector<VkDescriptorSet> descriptorSets;
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorPool descriptorPool;
+        void createDescriptorSetLayout();
+        void createDescriptorPool();
+        void createDescriptorSets();
+        void setupObjectDescriptors(std::vector<Object>& objects);
+
 
         double last_time = glfwGetTime();
         int frame_count = 0;
