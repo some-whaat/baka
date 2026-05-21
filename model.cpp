@@ -132,8 +132,8 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 
   attribute_descriptions[1].binding = 0;
   attribute_descriptions[1].location = 1;
-  attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-  attribute_descriptions[1].offset = offsetof(Vertex, color);
+  attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+  attribute_descriptions[1].offset = offsetof(Vertex, uv);
 
   attribute_descriptions[2].binding = 0;
   attribute_descriptions[2].location = 2;
@@ -142,8 +142,8 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 
   attribute_descriptions[3].binding = 0;
   attribute_descriptions[3].location = 3;
-  attribute_descriptions[3].format = VK_FORMAT_R16G16B16A16_SFLOAT;
-  attribute_descriptions[3].offset = offsetof(Vertex, uv);
+  attribute_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+  attribute_descriptions[3].offset = offsetof(Vertex, color);
 
   return attribute_descriptions;
 }

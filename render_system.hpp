@@ -27,6 +27,7 @@ class RenderSystem {
         RenderSystem &operator=(const RenderSystem&) = delete;
 
         void renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time);
+        void setupObjectDescriptors(std::vector<Object>& objects);
 
     private:
         void createPipelineLayout();
@@ -38,7 +39,7 @@ class RenderSystem {
         void createDescriptorSetLayout();
         void createDescriptorPool();
         void createDescriptorSets();
-        void setupObjectDescriptors(std::vector<Object>& objects);
+        
 
 
         double last_time = glfwGetTime();

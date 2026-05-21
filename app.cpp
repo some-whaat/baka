@@ -24,6 +24,8 @@ App::~App() {}
 void App::run() {
   RenderSystem render_system{device, renderer.getSwapChainRenderPass()};
 
+  render_system.setupObjectDescriptors(objects);
+
   double current_time = glfwGetTime();
 
   static int frame_count = 0;
@@ -63,66 +65,66 @@ void App::run() {
   vkDeviceWaitIdle(device.getDevice());
 }
 
-std::unique_ptr<Model> createCubeModel(Device& device) {
-  Model::Builder model_builder{};
-  model_builder.vertices = {
+// std::unique_ptr<Model> createCubeModel(Device& device) {
+//   Model::Builder model_builder{};
+//   model_builder.vertices = {
  
-      // left face (white)
-      {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
-      {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
-      {{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
-      {{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
+//       // left face (white)
+//       {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+//       {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+//       {{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
+//       {{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
  
-      // right face (yellow)
-      {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
-      {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
-      {{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
-      {{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
+//       // right face (yellow)
+//       {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+//       {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+//       {{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
+//       {{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
  
-      // top face (orange, remember y axis points down)
-      {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
-      {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
-      {{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
-      {{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+//       // top face (orange, remember y axis points down)
+//       {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+//       {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+//       {{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+//       {{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
  
-      // bottom face (red)
-      {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
-      {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
-      {{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
-      {{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+//       // bottom face (red)
+//       {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+//       {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+//       {{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
+//       {{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
  
-      // nose face (blue)
-      {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
-      {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
-      {{-.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
-      {{.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+//       // nose face (blue)
+//       {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+//       {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+//       {{-.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+//       {{.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
  
-      // tail face (green)
-      {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
-      {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
-      {{-.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
-      {{.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+//       // tail face (green)
+//       {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+//       {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+//       {{-.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+//       {{.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
  
-  };
+//   };
 
-  model_builder.indices = {0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
-                        12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21};
+//   model_builder.indices = {0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
+//                         12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21};
 
 
-  // for (auto& v : vertices) {
-  //   // v.position = v.position * rot_mat_x;
-  //   // v.position += offset;
-  // }
-  return std::make_unique<Model>(device, model_builder);
+//   // for (auto& v : vertices) {
+//   //   // v.position = v.position * rot_mat_x;
+//   //   // v.position += offset;
+//   // }
+//   return std::make_unique<Model>(device, model_builder);
 
-}
+// }
 
 void App::loadObjects() {
 
   std::shared_ptr<Model> model = Model::createModelFromFile(device, "/home/somewhat/projects/grathics_stuff/baka/models/cute_building/viking_room.obj"); // createCubeModel(device);
   
   std::shared_ptr<Texture> texture = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue());
-  texture->loadFromFile("pictures/catapillar.jpg");
+  texture->loadFromFile("pictures/viking_room.png");
   texture->createImageView(VK_FORMAT_R8G8B8A8_SRGB);
   texture->createSampler();
 
