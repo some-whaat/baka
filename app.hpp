@@ -6,10 +6,13 @@
 #include "model.hpp"
 #include "object.hpp"
 #include "camera.hpp"
+#include "texture.hpp"
 
 // std
 #include <memory>
 #include <vector>
+
+
 
 namespace baka {
 

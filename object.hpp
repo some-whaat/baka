@@ -1,6 +1,7 @@
 #pragma once
 
 #include "model.hpp"
+#include "texture.hpp"
 
 
 #include <memory>
@@ -84,11 +85,13 @@ namespace baka {
         Transform transform;
         // glm::vec3 color;
         std::shared_ptr<Model> model;
+        std::shared_ptr<Texture> texture;
 
         Object() {};
 
-        Object(std::shared_ptr<Model> _model, Transform _transform) {
+        Object(std::shared_ptr<Model> _model, std::shared_ptr<Texture> _texture, Transform _transform) {
             model = std::move(_model);
+            texture = std::move(_texture);
             transform = _transform;
         }
 

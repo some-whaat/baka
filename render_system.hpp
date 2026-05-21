@@ -32,6 +32,9 @@ class RenderSystem {
         void createPipelineLayout();
         void createPipeline(VkRenderPass render_pass);
 
+        std::vector<VkDescriptorSet> descriptorSets;
+        VkDescriptorSetLayout descriptorSetLayout;
+        VkDescriptorPool descriptorPool;
 
         double last_time = glfwGetTime();
         int frame_count = 0;

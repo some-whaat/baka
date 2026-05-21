@@ -9,6 +9,11 @@
 #include <set>
 #include <stdexcept>
 
+
+// #define STB_IMAGE_IMPLEMENTATION
+// #include "libs/stb_image.h"
+
+
 namespace baka {
 
 SwapChain::SwapChain(Device &deviceRef, VkExtent2D extent)

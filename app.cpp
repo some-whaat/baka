@@ -120,15 +120,21 @@ std::unique_ptr<Model> createCubeModel(Device& device) {
 void App::loadObjects() {
 
   std::shared_ptr<Model> model = Model::createModelFromFile(device, "/home/somewhat/projects/grathics_stuff/baka/models/cute_building/viking_room.obj"); // createCubeModel(device);
+  
+  std::shared_ptr<Texture> texture = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue());
+  texture->loadFromFile("pictures/catapillar.jpg");
+  texture->createImageView(VK_FORMAT_R8G8B8A8_SRGB);
+  texture->createSampler();
 
-  auto cube = Object();
-  cube.model = model;
-  // cube.color = {.1f, .8f, .1f};
-  cube.transform.pos = {0.0f, .0f, 3.f,};
-  cube.transform.scale = {.5f, .5f, .5f};
-  cube.transform.rot = {0.f, 0.f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
+  auto obj = Object();
+  obj.model = model;
+  obj.texture = texture;
+  // obj.color = {.1f, .8f, .1f};
+  obj.transform.pos = {0.0f, .0f, 3.f,};
+  obj.transform.scale = {.5f, .5f, .5f};
+  obj.transform.rot = {0.f, 0.f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
 
-  objects.push_back(std::move(cube));
+  objects.push_back(std::move(obj));
 }
 
 }  // namespace baka

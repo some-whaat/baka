@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -I/home/somewhat/projects/grathics_stuff/baka/libs
+CXXFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -I/home/somewhat/projects/grathics_stuff/baka/libs -I/home/somewhat/projects/grathics_stuff/baka/pictures
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
 # Source files
@@ -38,6 +38,7 @@ debug: $(TARGET)
 release: CXXFLAGS += $(RELEASE_FLAGS)
 release: $(TARGET)
 
+# Create the target executable
 $(TARGET): $(SHADER_SPV) $(CPP_FILES)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(CPP_FILES) $(LDFLAGS)
 	@echo "Build complete: $(TARGET)"
