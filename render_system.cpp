@@ -188,8 +188,7 @@ void RenderSystem::createPipelineLayout() {
   pipeline_layoutInfo.pSetLayouts = &descriptorSetLayout;
   pipeline_layoutInfo.pushConstantRangeCount = 1;
   pipeline_layoutInfo.pPushConstantRanges = &pushConstantRange;
-  if (vkCreatePipelineLayout(device.getDevice(), &pipeline_layoutInfo, nullptr, &pipeline_layout) !=
-      VK_SUCCESS) {
+  if (vkCreatePipelineLayout(device.getDevice(), &pipeline_layoutInfo, nullptr, &pipeline_layout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
 }
@@ -225,8 +224,7 @@ void RenderSystem::createDescriptorSetLayout() {
     layoutInfo.bindingCount = 1;
     layoutInfo.pBindings = &samplerLayoutBinding;
     
-    if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) 
-        != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 }
@@ -243,8 +241,7 @@ void RenderSystem::createDescriptorPool() {
     poolInfo.pPoolSizes = &poolSize;
     poolInfo.maxSets = 100;  // Maximum number of descriptor sets that can be allocated
     
-    if (vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) 
-        != VK_SUCCESS) {
+    if (vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 }

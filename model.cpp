@@ -144,7 +144,6 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
   attribute_descriptions[3].location = 3;
   attribute_descriptions[3].format = VK_FORMAT_R16G16B16A16_SFLOAT;
   attribute_descriptions[3].offset = offsetof(Vertex, uv);
-  
 
   return attribute_descriptions;
 }
