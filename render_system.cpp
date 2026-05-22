@@ -3,6 +3,7 @@
 // std
 #include <array>
 #include <stdexcept>
+#include <cstring>
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -11,78 +12,158 @@
 
 namespace baka {
   	
-struct PushConstantData {
-  glm::mat4 transform{1.f};
-//   float time;
-  // glm::vec3 normal;
-  //  alignas(16) glm::vec3 color;
-  
-};
+  struct PushConstantData {
+    glm::mat4 transform{1.f};
+    float time;
+    // glm::vec3 normal;
+    //  alignas(16) glm::vec3 color;
+    
+  };
 
-RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_device} {
-  createDescriptorSetLayout();
-  createDescriptorPool();
-  createPipelineLayout();
-  createPipeline(render_pass);
+  RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_device} {
+    createDescriptorSetLayout();
+    createDescriptorPool();
+    createPipelineLayout();
+    createPipeline(render_pass);
+  }
+
+  RenderSystem::~RenderSystem() {
+    vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr);
+    vkDestroyDescriptorSetLayout(device.getDevice(), sceneDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
+    vkDestroyBuffer(device.getDevice(), scene_data_buffer, nullptr);
+    vkFreeMemory(device.getDevice(), scene_data_buffer_memory, nullptr);
 }
 
-RenderSystem::~RenderSystem() { vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr); }
 
-void RenderSystem::setupObjectDescriptors(std::vector<Object>& objects) {
-    for (auto& obj : objects) {
-        if (!obj.texture) continue;
-        
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts = &descriptorSetLayout;
-        
-        if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &obj.descriptor_set) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate descriptor set!");
-        }
-        
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = obj.texture->getImageView();
-        imageInfo.sampler = obj.texture->getSampler();
-        
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = obj.descriptor_set;
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-        
-        vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-}
+  void RenderSystem::setupObjectDescriptors(std::vector<Object>& objects) {
+      for (auto& obj : objects) {
+          if (!obj.texture) continue;
+          
+          VkDescriptorSetAllocateInfo allocInfo{};
+          allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+          allocInfo.descriptorPool = descriptorPool;
+          allocInfo.descriptorSetCount = 1;
+          allocInfo.pSetLayouts = &descriptorSetLayout;
+          
+          if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &obj.descriptor_set) != VK_SUCCESS) {
+              throw std::runtime_error("failed to allocate descriptor set!");
+          }
+          
+          VkDescriptorImageInfo imageInfo{};
+          imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+          imageInfo.imageView = obj.texture->getImageView();
+          imageInfo.sampler = obj.texture->getSampler();
+          
+          VkWriteDescriptorSet descriptorWrite{};
+          descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          descriptorWrite.dstSet = obj.descriptor_set;
+          descriptorWrite.dstBinding = 0;
+          descriptorWrite.dstArrayElement = 0;
+          descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          descriptorWrite.descriptorCount = 1;
+          descriptorWrite.pImageInfo = &imageInfo;
+          
+          vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
+      }
 
-// Simplified render function
-void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, /* TEMPORARY, delete */ double frame_time) {
+
+
+      PointLightData point_light;
+      point_light.color = {1., 1., 0., 1.};
+      point_light.position = {0., 0.2, -0.5};
+
+      scene_data.point_lights = {point_light};
+
+      VkDeviceSize scene_data_buffer_size = sizeof(PointLightData) * scene_data.point_lights.size() + sizeof(uint32_t);
+
+      device.createBuffer(
+          scene_data_buffer_size,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+          scene_data_buffer,
+          scene_data_buffer_memory);
+
+          
+      // Map and copy data
+      void* data;
+      vkMapMemory(device.getDevice(), scene_data_buffer_memory, 0, scene_data_buffer_size, 0, &data);
+      
+      // First copy the count
+      uint32_t numLights = static_cast<uint32_t>(scene_data.point_lights.size());
+      memcpy(data, &numLights, sizeof(uint32_t));
+      
+      // Then copy the light data (offset by 16 bytes for alignment, or just after count)
+      memcpy(static_cast<char*>(data) + 16, scene_data.point_lights.data(), 
+            sizeof(PointLightData) * scene_data.point_lights.size());
+      
+      vkUnmapMemory(device.getDevice(), scene_data_buffer_memory);
+
+      // Update scene descriptor set
+      VkDescriptorBufferInfo bufferInfo{};
+      bufferInfo.buffer = scene_data_buffer;
+      bufferInfo.offset = 0;
+      bufferInfo.range = sizeof(scene_data);
+      
+      VkDescriptorSetAllocateInfo sceneAllocInfo{};
+      sceneAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      sceneAllocInfo.descriptorPool = descriptorPool;
+      sceneAllocInfo.descriptorSetCount = 1;
+      sceneAllocInfo.pSetLayouts = &sceneDescriptorSetLayout;
+      
+      if (vkAllocateDescriptorSets(device.getDevice(), &sceneAllocInfo, &sceneDescriptorSet) != VK_SUCCESS) {
+          throw std::runtime_error("failed to allocate scene descriptor set!");
+      }
+      
+      VkWriteDescriptorSet sceneWrite{};
+      sceneWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      sceneWrite.dstSet = sceneDescriptorSet;
+      sceneWrite.dstBinding = 0;
+      sceneWrite.dstArrayElement = 0;
+      sceneWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      sceneWrite.descriptorCount = 1;
+      sceneWrite.pBufferInfo = &bufferInfo;
+
+      vkUpdateDescriptorSets(device.getDevice(), 1, &sceneWrite, 0, nullptr);
+  }
+
+
+
+
+ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time) {
+    
     pipeline->bind(command_buffer);
     auto projection_view = camera.getProjection() * camera.getView();
     
     for (auto& obj : objects) {
-        // Just bind the pre-allocated descriptor set
-        if (obj.texture && obj.descriptor_set != VK_NULL_HANDLE) {
-            vkCmdBindDescriptorSets(
-                command_buffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline_layout,
-                0, 1, &obj.descriptor_set,
-                0, nullptr);
-        }
+        if (!obj.texture || obj.descriptor_set == VK_NULL_HANDLE) continue;
         
-        // Update transform (rotation)
-        obj.transform.rot.y += frame_time;
+        // Bind both descriptor sets
+        std::array<VkDescriptorSet, 2> descriptorSets = {
+            obj.descriptor_set,
+            sceneDescriptorSet
+        };
+        
+        vkCmdBindDescriptorSets(
+            command_buffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipeline_layout,
+            0,
+            static_cast<uint32_t>(descriptorSets.size()),
+            descriptorSets.data(),
+            0,
+            nullptr);
+        
+        // Update transforms and push constants
+        frame_count += (float)frame_time;
+        obj.transform.rot.y = -0.8;
         obj.transform.rot.x = 90;
+        obj.transform.rot.z = 10;
         
-        // Push constants
         PushConstantData push{};
         push.transform = projection_view * obj.transform.getMat4();
+        push.time = frame_count;
         
         vkCmdPushConstants(
             command_buffer,
@@ -97,74 +178,105 @@ void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Obj
     }
 }
 
-void RenderSystem::createPipelineLayout() {
-  VkPushConstantRange pushConstantRange{};
-  pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-  pushConstantRange.offset = 0;
-  pushConstantRange.size = sizeof(PushConstantData);
 
-  VkPipelineLayoutCreateInfo pipeline_layoutInfo{};
-  pipeline_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layoutInfo.setLayoutCount = 1;
-  pipeline_layoutInfo.pSetLayouts = &descriptorSetLayout;
-  pipeline_layoutInfo.pushConstantRangeCount = 1;
-  pipeline_layoutInfo.pPushConstantRanges = &pushConstantRange;
-  if (vkCreatePipelineLayout(device.getDevice(), &pipeline_layoutInfo, nullptr, &pipeline_layout) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create pipeline layout!");
+  void RenderSystem::createPipelineLayout() {
+      VkPushConstantRange pushConstantRange{};
+      pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+      pushConstantRange.offset = 0;
+      pushConstantRange.size = sizeof(PushConstantData);
+
+      // set 0 = textures, set 1 = scene data
+      std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+          descriptorSetLayout,
+          sceneDescriptorSetLayout 
+      };
+
+      VkPipelineLayoutCreateInfo pipeline_layoutInfo{};
+      pipeline_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+      pipeline_layoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+      pipeline_layoutInfo.pSetLayouts = descriptorSetLayouts.data();
+      pipeline_layoutInfo.pushConstantRangeCount = 1;
+      pipeline_layoutInfo.pPushConstantRanges = &pushConstantRange;
+      
+      if (vkCreatePipelineLayout(device.getDevice(), &pipeline_layoutInfo, nullptr, &pipeline_layout) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create pipeline layout!");
+      }
   }
-}
 
 
-void RenderSystem::createPipeline(VkRenderPass render_pass) {
+  void RenderSystem::createPipeline(VkRenderPass render_pass) {
 
-  assert(pipeline_layout != nullptr && "Cannot create pipeline before pipeline layout");
+    assert(pipeline_layout != nullptr && "Cannot create pipeline before pipeline layout");
 
-  PipelineConfigInfo pipelineConfig{};
-  Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-  pipelineConfig.renderPass = render_pass;
-  pipelineConfig.pipelineLayout = pipeline_layout;
-  pipeline = std::make_unique<Pipeline>(
-      device,
-      "shaders/first_shader.vert.spv",
-      "shaders/first_shader.frag.spv",
-      pipelineConfig);
+    PipelineConfigInfo pipelineConfig{};
+    Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+    pipelineConfig.renderPass = render_pass;
+    pipelineConfig.pipelineLayout = pipeline_layout;
+    pipeline = std::make_unique<Pipeline>(
+        device,
+        "shaders/first_shader.vert.spv",
+        "shaders/first_shader.frag.spv",
+        pipelineConfig);
 
-  assert(pipeline_layout != nullptr && "Cannot create pipeline before pipeline layout");
-}
+    assert(pipeline_layout != nullptr && "Cannot create pipeline before pipeline layout");
+  }
 
-void RenderSystem::createDescriptorSetLayout() {
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 0;  // binding number in shader
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;  // Used in fragment shader
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &samplerLayoutBinding;
-    
-    if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
-}
+  void RenderSystem::createDescriptorSetLayout() {
+      // per-object texture sampler
+      VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+      samplerLayoutBinding.binding = 0;
+      samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      samplerLayoutBinding.descriptorCount = 1;
+      samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+      samplerLayoutBinding.pImmutableSamplers = nullptr;
+      
+      VkDescriptorSetLayoutCreateInfo layoutInfo{};
+      layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+      layoutInfo.bindingCount = 1;
+      layoutInfo.pBindings = &samplerLayoutBinding;
+      
+      if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create descriptor set layout!");
+      }
 
-void RenderSystem::createDescriptorPool() {
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    // Allow multiple descriptor sets (one per object). Make this large enough for typical scenes.
-    poolSize.descriptorCount = 100;
-    
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = 100;  // Maximum number of descriptor sets that can be allocated
-    
-    if (vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor pool!");
-    }
-}
+      // scene-wide uniform buffer
+      VkDescriptorSetLayoutBinding sceneDataBinding{};
+      sceneDataBinding.binding = 0;
+      sceneDataBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      sceneDataBinding.descriptorCount = 1;
+      sceneDataBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+      sceneDataBinding.pImmutableSamplers = nullptr;
+
+      VkDescriptorSetLayoutCreateInfo sceneLayoutInfo{};
+      sceneLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+      sceneLayoutInfo.bindingCount = 1;
+      sceneLayoutInfo.pBindings = &sceneDataBinding;
+
+      if (vkCreateDescriptorSetLayout(device.getDevice(), &sceneLayoutInfo, nullptr, &sceneDescriptorSetLayout) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create scene descriptor set layout!");
+      }
+  }
+
+  void RenderSystem::createDescriptorPool() {
+      std::array<VkDescriptorPoolSize, 2> poolSizes{};
+      
+      // 4 object textures
+      poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      poolSizes[0].descriptorCount = 100;
+      
+      // 4 scene uniform buffer
+      poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      poolSizes[1].descriptorCount = 1;
+      
+      VkDescriptorPoolCreateInfo poolInfo{};
+      poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+      poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+      poolInfo.pPoolSizes = poolSizes.data();
+      poolInfo.maxSets = 101;  // 100 object sets + 1 scene set
+      
+      if (vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create descriptor pool!");
+      }
+  }
 
 }  // namespace baka
