@@ -124,7 +124,7 @@ void App::loadObjects() {
   std::shared_ptr<Model> model = Model::createModelFromFile(device, "/home/somewhat/projects/grathics_stuff/baka/models/cute_building/viking_room.obj"); // createCubeModel(device);
   
   std::shared_ptr<Texture> texture = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue());
-  texture->loadFromFile("pictures/catapillar.jpg");
+  texture->loadFromFile("pictures/viking_room.png");
   texture->createImageView(VK_FORMAT_R8G8B8A8_SRGB);
   texture->createSampler();
 

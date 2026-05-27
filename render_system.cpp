@@ -32,8 +32,8 @@ namespace baka {
     vkDestroyDescriptorSetLayout(device.getDevice(), sceneDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
-    vkDestroyBuffer(device.getDevice(), scene_data_buffer, nullptr);
-    vkFreeMemory(device.getDevice(), scene_data_buffer_memory, nullptr);
+
+    cleanupSceneDataBuffer();
 }
 
 
@@ -70,76 +70,127 @@ namespace baka {
 
 
 
-      PointLightData point_light;
-      point_light.color = {1., 1., 0., 1.};
-      point_light.position = {0., 0.2, -0.5};
+    //   PointLightData point_light;
+    //   point_light.color = {1., 1., 0., 1.};
+    //   point_light.position = {0., 0.2, -0.5};
 
-      scene_data.point_lights = {point_light};
+    //   scene_data.point_lights = {point_light};
 
-      VkDeviceSize scene_data_buffer_size = sizeof(PointLightData) * scene_data.point_lights.size() + sizeof(uint32_t);
+    //   VkDeviceSize scene_data_buffer_size = sizeof(PointLightData) * scene_data.point_lights.size() + sizeof(uint32_t);
 
-      device.createBuffer(
-          scene_data_buffer_size,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          scene_data_buffer,
-          scene_data_buffer_memory);
+    //   device.createBuffer(
+    //       scene_data_buffer_size,
+    //       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+    //       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    //       scene_data_buffer,
+    //       scene_data_buffer_memory);
 
           
-      // Map and copy data
-      void* data;
-      vkMapMemory(device.getDevice(), scene_data_buffer_memory, 0, scene_data_buffer_size, 0, &data);
-      
-      // First copy the count
-      uint32_t numLights = static_cast<uint32_t>(scene_data.point_lights.size());
-      memcpy(data, &numLights, sizeof(uint32_t));
-      
-      // Then copy the light data (offset by 16 bytes for alignment, or just after count)
-      memcpy(static_cast<char*>(data) + 16, scene_data.point_lights.data(), 
-            sizeof(PointLightData) * scene_data.point_lights.size());
-      
-      vkUnmapMemory(device.getDevice(), scene_data_buffer_memory);
-
-      // Update scene descriptor set
-      VkDescriptorBufferInfo bufferInfo{};
-      bufferInfo.buffer = scene_data_buffer;
-      bufferInfo.offset = 0;
-      bufferInfo.range = sizeof(scene_data);
-      
-      VkDescriptorSetAllocateInfo sceneAllocInfo{};
-      sceneAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-      sceneAllocInfo.descriptorPool = descriptorPool;
-      sceneAllocInfo.descriptorSetCount = 1;
-      sceneAllocInfo.pSetLayouts = &sceneDescriptorSetLayout;
-      
-      if (vkAllocateDescriptorSets(device.getDevice(), &sceneAllocInfo, &sceneDescriptorSet) != VK_SUCCESS) {
-          throw std::runtime_error("failed to allocate scene descriptor set!");
-      }
-      
-      VkWriteDescriptorSet sceneWrite{};
-      sceneWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      sceneWrite.dstSet = sceneDescriptorSet;
-      sceneWrite.dstBinding = 0;
-      sceneWrite.dstArrayElement = 0;
-      sceneWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-      sceneWrite.descriptorCount = 1;
-      sceneWrite.pBufferInfo = &bufferInfo;
-
-      vkUpdateDescriptorSets(device.getDevice(), 1, &sceneWrite, 0, nullptr);
+      createSceneDataBuffer();
   }
 
+void RenderSystem::createSceneDataBuffer() {
+    PointLightData point_light;
+    point_light.color = {0., 1., 1., 0.9};
+    point_light.position = {1., 1.0, 1.0};
 
+    scene_data.point_lights = {point_light};
+
+    // Calculate proper buffer size with alignment
+    VkDeviceSize scene_data_buffer_size = sizeof(uint32_t) + sizeof(PointLightData) * scene_data.point_lights.size();
+    
+    // Ensure minimum alignment (16 bytes is typical for SSBO)
+    scene_data_buffer_size = (scene_data_buffer_size + 15) & ~15;
+
+    device.createBuffer(
+        scene_data_buffer_size,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        scene_data_buffer,
+        scene_data_buffer_memory);
+
+    // Map and copy data
+    // void* scene_mapped_data;
+    vkMapMemory(device.getDevice(), scene_data_buffer_memory, 0, scene_data_buffer_size, 0, &scene_mapped_data);
+    
+    // First copy the count
+    uint32_t numLights = static_cast<uint32_t>(scene_data.point_lights.size());
+    memcpy(scene_mapped_data, &numLights, sizeof(uint32_t));
+    
+    // Then copy the light data immediately after count (offset = sizeof(uint32_t))
+    memcpy(static_cast<char*>(scene_mapped_data) + sizeof(uint32_t), scene_data.point_lights.data(), 
+          sizeof(PointLightData) * scene_data.point_lights.size());
+    
+    // vkUnmapMemory(device.getDevice(), scene_data_buffer_memory);
+
+    // scene descriptor
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = scene_data_buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = scene_data_buffer_size;  // Use actual buffer size
+    
+    VkDescriptorSetAllocateInfo sceneAllocInfo{};
+    sceneAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    sceneAllocInfo.descriptorPool = descriptorPool;
+    sceneAllocInfo.descriptorSetCount = 1;
+    sceneAllocInfo.pSetLayouts = &sceneDescriptorSetLayout;
+    
+    if (vkAllocateDescriptorSets(device.getDevice(), &sceneAllocInfo, &sceneDescriptorSet) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate scene descriptor set!");
+    }
+    
+    VkWriteDescriptorSet sceneWrite{};
+    sceneWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    sceneWrite.dstSet = sceneDescriptorSet;
+    sceneWrite.dstBinding = 0;
+    sceneWrite.dstArrayElement = 0;
+    sceneWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    sceneWrite.descriptorCount = 1;
+    sceneWrite.pBufferInfo = &bufferInfo;
+
+    vkUpdateDescriptorSets(device.getDevice(), 1, &sceneWrite, 0, nullptr);
+}
+
+
+void RenderSystem::updateSceneDataBuffer() {
+    if (!scene_mapped_data) return;
+    
+    memcpy(static_cast<char*>(scene_mapped_data) + sizeof(uint32_t), 
+           scene_data.point_lights.data(), 
+           sizeof(PointLightData) * scene_data.point_lights.size());
+    
+    // Since we're using HOST_COHERENT memory, no need to flush
+}
+
+
+void RenderSystem::cleanupSceneDataBuffer() {
+    if (scene_mapped_data) {
+        vkUnmapMemory(device.getDevice(), scene_data_buffer_memory);
+        scene_mapped_data = nullptr;
+    }
+    if (scene_data_buffer != VK_NULL_HANDLE) {
+        vkDestroyBuffer(device.getDevice(), scene_data_buffer, nullptr);
+        scene_data_buffer = VK_NULL_HANDLE;
+    }
+    if (scene_data_buffer_memory != VK_NULL_HANDLE) {
+        vkFreeMemory(device.getDevice(), scene_data_buffer_memory, nullptr);
+        scene_data_buffer_memory = VK_NULL_HANDLE;
+    }
+}
 
 
  void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time) {
     
     pipeline->bind(command_buffer);
-    auto projection_view = camera.getProjection() * camera.getView();
+    glm::mat<4, 4, glm::f32, glm::packed_highp> projection_view = camera.getProjection() * camera.getView();
     
+    scene_data.point_lights[0].position = objects[0].transform.pos + glm::vec3(sin(frame_count), 0., cos(frame_count));
+    // scene_data.point_lights[0].position = glm::mat3(camera.getView()) * objects[0].transform.pos + glm::vec3(sin(frame_count), 0., cos(frame_count));
+    updateSceneDataBuffer();
+
     for (auto& obj : objects) {
         if (!obj.texture || obj.descriptor_set == VK_NULL_HANDLE) continue;
         
-        // Bind both descriptor sets
         std::array<VkDescriptorSet, 2> descriptorSets = {
             obj.descriptor_set,
             sceneDescriptorSet
@@ -185,7 +236,7 @@ namespace baka {
       pushConstantRange.offset = 0;
       pushConstantRange.size = sizeof(PushConstantData);
 
-      // set 0 = textures, set 1 = scene data
+
       std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
           descriptorSetLayout,
           sceneDescriptorSetLayout 
@@ -242,7 +293,7 @@ namespace baka {
       // scene-wide uniform buffer
       VkDescriptorSetLayoutBinding sceneDataBinding{};
       sceneDataBinding.binding = 0;
-      sceneDataBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      sceneDataBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       sceneDataBinding.descriptorCount = 1;
       sceneDataBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
       sceneDataBinding.pImmutableSamplers = nullptr;
@@ -260,12 +311,10 @@ namespace baka {
   void RenderSystem::createDescriptorPool() {
       std::array<VkDescriptorPoolSize, 2> poolSizes{};
       
-      // 4 object textures
       poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       poolSizes[0].descriptorCount = 100;
       
-      // 4 scene uniform buffer
-      poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       poolSizes[1].descriptorCount = 1;
       
       VkDescriptorPoolCreateInfo poolInfo{};

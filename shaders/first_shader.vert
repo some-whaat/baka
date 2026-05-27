@@ -6,7 +6,7 @@ struct PointLight {
 };
 
 layout(set = 1, binding = 0) readonly buffer SceneData {
-    uint count;
+    // uint count;
     PointLight lights[];
 } scene_data;
 
@@ -30,17 +30,21 @@ const float ambient = 0.1;
 void main() {
     //gl_Position = vec4(position.x * cos(push.time), position.y * sin(push.time), position.z, 1.0);// * push.trans;
     gl_Position = push.trans * vec4(position, 1.0);
-    light_dir = normalize(vec3(sin(push.time), -cos(push.time), -sin(push.time)));
+    // light_dir = normalize(vec3(sin(push.time), -cos(push.time), -sin(push.time)));
     vec3 trans_normal = normalize((push.trans * vec4(normal, 0.0)).xyz);
 
     // gl_Position = vec4(position * mat2(cos(push.rot), -sin(push.rot), sin(push.rot), cos(push.rot)) + push.offset, 0.0, 1.0);
-    vec3 light_pos = vec3(sin(push.time), 0., cos(push.time)) * 3.; // scene_data.lights[0].position;
-    vec3 light_dist_world = light_pos - (push.trans * vec4(position, 1.0)).xyz;
-    vec3 light_dir_world = normalize(light_dist_world);
+    // vec3 light_pos = vec3(sin(push.time), 0., cos(push.time)) * 3.; // scene_data.lights[0].position;
+    vec3 point_light_pos = scene_data.lights[0].position;
+    vec3 point_light_dist_world = point_light_pos - (push.trans * vec4(position, 1.0)).xyz;
+    vec3 point_light_dir_world = normalize(point_light_dist_world);
 
+    vec3 point_light_col_bight = scene_data.lights[0].color.xyz * scene_data.lights[0].color.w;
+    float point_light_intensity = 1./ dot(point_light_dist_world, point_light_dist_world); // dot(point_light_pos - position, point_light_pos - position);
     // vec3 dir_to_pos_light = /*scene_data.lights[0].position*/ vec3(sin(push.time), 0., cos(push.time)) - position;
 
-    // float light = max(dot(light_dir, trans_normal), 0.0) + ambient;
-    frag_color = /*color * light  + */max(dot(light_dir_world, trans_normal), 0.0) * vec3(1., 0., 1.) * 0.9/length(light_dist_world); // * scene_data.lights[0].color.xyz * scene_data.lights[0].color.w;
+    float world_light = 0.; // max(dot(light_dir, trans_normal), 0.0);
+    float point__light = max(dot(point_light_dir_world, trans_normal), 0.0) * point_light_intensity;
+    frag_color = point__light * point_light_col_bight + world_light ;//+ ambient; // * vec3(1., 0., 1.) * 0.9/length(light_dist_world)
     frag_uv = uv;
 }

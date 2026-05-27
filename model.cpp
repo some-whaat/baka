@@ -49,6 +49,23 @@ std::unique_ptr<Model> Model::createModelFromFile(Device &device, const std::str
   return std::make_unique<Model>(device, builder);
 }
 
+std::unique_ptr<Model> Model::createQuad(Device &device, float size) {
+  Builder builder{};
+  float half = size / 2.0f;
+
+  // positions on XY plane (Z = 0)
+  Vertex v0{}; v0.position = {-half, -half, 0.0f}; v0.uv = {0.0f, 0.0f}; v0.normal = {0.0f, 0.0f, 1.0f}; v0.color = {1.0f, 1.0f, 1.0f};
+  Vertex v1{}; v1.position = {half, -half, 0.0f};  v1.uv = {1.0f, 0.0f}; v1.normal = {0.0f, 0.0f, 1.0f}; v1.color = {1.0f, 1.0f, 1.0f};
+  Vertex v2{}; v2.position = {half, half, 0.0f};   v2.uv = {1.0f, 1.0f}; v2.normal = {0.0f, 0.0f, 1.0f}; v2.color = {1.0f, 1.0f, 1.0f};
+  Vertex v3{}; v3.position = {-half, half, 0.0f};  v3.uv = {0.0f, 1.0f}; v3.normal = {0.0f, 0.0f, 1.0f}; v3.color = {1.0f, 1.0f, 1.0f};
+
+  builder.vertices = {v0, v1, v2, v3};
+  // two triangles: (0,1,2) and (2,3,0)
+  builder.indices = {0, 1, 2, 2, 3, 0};
+
+  return std::make_unique<Model>(device, builder);
+}
+
 void Model::createVertexBuffers(const std::vector<Vertex> &vertices) {
   vertex_count = static_cast<uint32_t>(vertices.size());
   assert(vertex_count >= 3 && "Vertex count must be at least 3");
