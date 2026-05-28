@@ -123,6 +123,7 @@ void App::run() {
 void App::loadObjects() {
 
   std::shared_ptr<Model> model = Model::createModelFromFile(device, "/home/somewhat/projects/grathics_stuff/baka/models/cute_building/viking_room.obj"); // createCubeModel(device);
+  // std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/chickentative/chickentative.obj"); // createCubeModel(device);
   
   std::shared_ptr<Texture> texture = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue());
   texture->loadFromFile("pictures/viking_room.png");
@@ -136,8 +137,26 @@ void App::loadObjects() {
   obj.transform.pos = {0.0f, .0f, 3.f,};
   obj.transform.scale = {.5f, .5f, .5f};
   obj.transform.rot = {0.f, 0.f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
-
   objects.push_back(std::move(obj));
+
+  auto floor = Object();
+  floor.model = Model::createQuad(device, 9.);
+  floor.texture = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/catapillar.jpg");
+  floor.transform.pos = {0.0f, .5f, 3.f,};
+  floor.transform.scale = {1.f, 1.f, 1.f};
+  floor.transform.rot = {1.57f, 0.0f, 0.0f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
+
+  objects.push_back(std::move(floor));
+
+  auto chick = Object();
+  chick.model =   Model::createModelFromFile(device, "models/chickentative/chickentative.obj");
+  chick.texture = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/catapillar.jpg");
+  chick.transform.pos = {0.0f, .5f, 3.f,};
+  chick.transform.scale = {1.f, 1.f, 1.f};
+  chick.transform.rot = {1.57f, 0.0f, 0.0f};
+  objects.push_back(std::move(chick));
+
+  
 }
 
 }  // namespace baka

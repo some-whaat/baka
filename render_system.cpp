@@ -186,15 +186,22 @@ void RenderSystem::cleanupSceneDataBuffer() {
     pipeline->bind(command_buffer);
     glm::mat<4, 4, glm::f32, glm::packed_highp> projection_view = camera.getProjection() * camera.getView();
     
-    glm::vec3 light_new_pos = glm::vec3(sin(frame_count), 0., cos(frame_count));// + objects[0].transform.pos
+    glm::vec3 light_new_pos = glm::vec3(sin(frame_count), .5, -cos(frame_count))+ objects[0].transform.pos;
     // std::cout << "x: " << light_new_pos.x << std::endl;
     // std::cout << "y: " << light_new_pos.y << std::endl;
     // std::cout << "z: " <<  light_new_pos.z << std::endl;
     scene_data.point_lights[0].position = light_new_pos;
     updateSceneDataBuffer();
 
+
+    frame_count += (float)frame_time;
+
+    // objects[0].transform.rot.y = -0.8;
+    objects[0].transform.rot.x = sin(frame_count);//90;
+    // objects[0].transform.rot.z = 10;
+
     for (auto& obj : objects) {
-        if (!obj.texture || obj.descriptor_set == VK_NULL_HANDLE) continue;
+        // if (!obj.texture || obj.descriptor_set == VK_NULL_HANDLE) continue;
         
         std::array<VkDescriptorSet, 2> descriptorSets = {
             obj.descriptor_set,
@@ -210,13 +217,6 @@ void RenderSystem::cleanupSceneDataBuffer() {
             descriptorSets.data(),
             0,
             nullptr);
-        
-
-        
-        frame_count += (float)frame_time;
-        obj.transform.rot.y = -0.8;
-        obj.transform.rot.x = 90;
-        obj.transform.rot.z = 10;
         
         PushConstantData push{};
         // model is the object's model->world transform (used for lighting)
@@ -304,7 +304,7 @@ void RenderSystem::cleanupSceneDataBuffer() {
       sceneDataBinding.binding = 0;
       sceneDataBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       sceneDataBinding.descriptorCount = 1;
-      sceneDataBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+      sceneDataBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;// | VK_SHADER_STAGE_VERTEX_BIT;
       sceneDataBinding.pImmutableSamplers = nullptr;
 
       VkDescriptorSetLayoutCreateInfo sceneLayoutInfo{};

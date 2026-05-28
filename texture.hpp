@@ -8,8 +8,8 @@
 
 class Texture {
 public:
-    Texture(VkDevice device, VkPhysicalDevice physicalDevice, 
-            VkCommandPool commandPool, VkQueue graphicsQueue);
+    Texture(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+    Texture(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, const std::string& filepath);
     ~Texture();
     
     // Delete copy constructor and assignment

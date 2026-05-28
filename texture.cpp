@@ -8,13 +8,23 @@
 #include <stdexcept>
 #include <cstring>
 
-Texture::Texture(VkDevice device, VkPhysicalDevice physicalDevice, 
-                 VkCommandPool commandPool, VkQueue graphicsQueue)
+Texture::Texture(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
     : device(device)
     , physicalDevice(physicalDevice)
     , commandPool(commandPool)
     , graphicsQueue(graphicsQueue) {
 }
+
+Texture::Texture(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, const std::string& filepath)
+    : device(device)
+    , physicalDevice(physicalDevice)
+    , commandPool(commandPool)
+    , graphicsQueue(graphicsQueue) {
+  loadFromFile(filepath);
+  createImageView(VK_FORMAT_R8G8B8A8_SRGB);
+  createSampler();
+}
+
 
 // void Texture::init(VkDevice _device, VkPhysicalDevice _physicalDevice, 
 //                  VkCommandPool _commandPool, VkQueue _graphicsQueue) {
