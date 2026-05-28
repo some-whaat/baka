@@ -1,0 +1,82 @@
+# Blender 5.0.0 MTL File: 'chickentative.blend'
+# www.blender.org
+
+newmtl Material.014
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_0_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_0_color.png
+
+newmtl Material.015
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_1_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_1_color.png
+
+newmtl Material.016
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_3_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_3_color.png
+
+newmtl Material.017
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_4_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_4_color.png
+
+newmtl Material.018
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_5_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_5_color.png
+
+newmtl Material.019
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_6_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_6_color.png
+
+newmtl Material.020
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_7_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_7_color.png
+
+newmtl Material.021
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_8_color.png
+map_d /run/media/somewhat/shared_space (obsidian, etc)/3д штуки/cuorky_dudes/not_redy_stuff/chickentective/model_8_color.png
