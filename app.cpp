@@ -51,6 +51,7 @@ void App::run() {
     // ============================================================|
     camera.setPerspectiveProj(glm::radians(50.f), aspect, 0.1f, 10);
 
+    camera.updatePosRotKeys(window.getWindow(), frame_time);
 
     if (auto command_buffer = renderer.beginFrame()) {
       renderer.beginSwapChainRenderPass(command_buffer);

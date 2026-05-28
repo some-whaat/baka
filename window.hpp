@@ -15,6 +15,7 @@ namespace baka {
             ~Window();
 
             bool shouldClose() { return glfwWindowShouldClose(window); }
+            GLFWwindow* getWindow() {return window; }
             VkExtent2D getExtent() {return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}; }
             bool wasWindowResized() {return was_framebuffer_resized; }
             void resetFramebufferResized() {was_framebuffer_resized = false; }
@@ -30,7 +31,7 @@ namespace baka {
 
         private:
         
-            GLFWwindow *window;  
+            GLFWwindow* window;  
 
             void initWindow();
 

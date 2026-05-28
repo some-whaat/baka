@@ -42,6 +42,9 @@ class Model {
         Model &operator=(const Model&) = delete;
 
         static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filepath);
+        // Create a simple quad (two triangles) centered at the origin on the XY plane.
+        // Size is the length of one side of the quad.
+        static std::unique_ptr<Model> createQuad(Device &device, float size = 1.0f);
 
         void bind(VkCommandBuffer command_buffer);
         void draw(VkCommandBuffer command_buffer);

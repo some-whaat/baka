@@ -16,6 +16,18 @@ namespace baka {
 
 class RenderSystem {
 
+    struct PointLightData {
+        // alignas(16) glm::vec3 position;
+        // alignas(16) glm::vec4 color; // w is brightness
+
+        glm::vec3 position;
+        glm::vec4 color; // w is brightness
+    };
+
+    struct SceneData {
+        std::vector<PointLightData> point_lights;
+    };
+
     public:
 
         float fps = 0;
@@ -34,20 +46,31 @@ class RenderSystem {
         void createPipeline(VkRenderPass render_pass);
 
         std::vector<VkDescriptorSet> descriptorSets;
+        VkDescriptorSet sceneDescriptorSet;
         VkDescriptorSetLayout descriptorSetLayout;
+        VkDescriptorSetLayout sceneDescriptorSetLayout;
         VkDescriptorPool descriptorPool;
         void createDescriptorSetLayout();
         void createDescriptorPool();
         void createDescriptorSets();
+
+        void createSceneDataBuffer();
+        void updateSceneDataBuffer();
+        void cleanupSceneDataBuffer();
         
 
 
         double last_time = glfwGetTime();
-        int frame_count = 0;
+        float frame_count = 0;
 
         void updateFrameRate();
 
         Device &device;
+
+        SceneData scene_data;
+        VkBuffer scene_data_buffer;
+        VkDeviceMemory scene_data_buffer_memory;
+        void* scene_mapped_data = nullptr;
 
         std::unique_ptr<Pipeline> pipeline;
         VkPipelineLayout pipeline_layout;
