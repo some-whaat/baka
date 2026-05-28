@@ -5,10 +5,16 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace baka {
     class Camera {
         public:
+
+        void updatePosRotKeys(GLFWwindow* window, float dt);
 
         void setOrthographicProj(float left, float right, float top, float bottom, float near, float far);
         void setPerspectiveProj(float fov, float aspect, float near, float far);
@@ -25,5 +31,8 @@ namespace baka {
     private:
         glm::mat4 projection_matrix{1.f};
         glm::mat4 view_matrix{1.f};
+
+        glm::vec3 pos = glm::vec3(0.f, 0.f, 0.f);
+        glm::vec3 rot = glm::vec3(0.f, 0.f, 0.f); // Euler
     };
 }

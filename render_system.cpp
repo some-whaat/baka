@@ -336,5 +336,6 @@ void RenderSystem::cleanupSceneDataBuffer() {
           throw std::runtime_error("failed to create descriptor pool!");
       }
   }
+  
 
 }  // namespace baka
