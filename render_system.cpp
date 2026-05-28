@@ -13,11 +13,13 @@
 namespace baka {
   	
   struct PushConstantData {
-    glm::mat4 transform{1.f};
+    glm::mat4 model{1.f};
+    glm::mat4 transform{1.f}; // mvp
     float time;
-    // glm::vec3 normal;
-    //  alignas(16) glm::vec3 color;
-    
+    // padding to 16-byte boundary
+    float _pad0;
+    float _pad1;
+    float _pad2;
   };
 
   RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_device} {
@@ -92,7 +94,7 @@ namespace baka {
 void RenderSystem::createSceneDataBuffer() {
     PointLightData point_light;
     point_light.color = {0., 1., 1., 0.9};
-    point_light.position = {1., 1.0, 1.0};
+    point_light.position = {0., 0.0, 3.0};
 
     scene_data.point_lights = {point_light};
 
@@ -184,8 +186,11 @@ void RenderSystem::cleanupSceneDataBuffer() {
     pipeline->bind(command_buffer);
     glm::mat<4, 4, glm::f32, glm::packed_highp> projection_view = camera.getProjection() * camera.getView();
     
-    scene_data.point_lights[0].position = objects[0].transform.pos + glm::vec3(sin(frame_count), 0., cos(frame_count));
-    // scene_data.point_lights[0].position = glm::mat3(camera.getView()) * objects[0].transform.pos + glm::vec3(sin(frame_count), 0., cos(frame_count));
+    glm::vec3 light_new_pos = glm::vec3(sin(frame_count), 0., cos(frame_count));// + objects[0].transform.pos
+    // std::cout << "x: " << light_new_pos.x << std::endl;
+    // std::cout << "y: " << light_new_pos.y << std::endl;
+    // std::cout << "z: " <<  light_new_pos.z << std::endl;
+    scene_data.point_lights[0].position = light_new_pos;
     updateSceneDataBuffer();
 
     for (auto& obj : objects) {
@@ -206,14 +211,18 @@ void RenderSystem::cleanupSceneDataBuffer() {
             0,
             nullptr);
         
-        // Update transforms and push constants
+
+        
         frame_count += (float)frame_time;
         obj.transform.rot.y = -0.8;
         obj.transform.rot.x = 90;
         obj.transform.rot.z = 10;
         
         PushConstantData push{};
-        push.transform = projection_view * obj.transform.getMat4();
+        // model is the object's model->world transform (used for lighting)
+        push.model = obj.transform.getMat4();
+        // transform is full MVP (used for gl_Position)
+        push.transform = projection_view * push.model;
         push.time = frame_count;
         
         vkCmdPushConstants(
