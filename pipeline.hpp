@@ -18,12 +18,16 @@ struct PipelineConfigInfo {
   VkPipelineMultisampleStateCreateInfo multisampleInfo;
   VkPipelineColorBlendAttachmentState colorBlendAttachment;
   VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+  // Support multiple color blend attachments for renderpasses with more than one color attachment
+  std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
   VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
   std::vector<VkDynamicState> dynamicStateEnables;
   VkPipelineDynamicStateCreateInfo dynamicStateInfo;
   VkPipelineLayout pipelineLayout = nullptr;
   VkRenderPass renderPass = nullptr;
   uint32_t subpass = 0;
+  // If false, pipeline will be created without a vertex input state (useful for full-screen passes)
+  bool useVertexInput = true;
 };
 
 class Pipeline {

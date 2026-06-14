@@ -134,7 +134,7 @@ void Model::createIndexBuffers(const std::vector<uint32_t> &indices) {
   VkDeviceSize buffer_size = sizeof(indices[0]) * index_count;
   device.createBuffer(
       buffer_size,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       index_buffer,
       index_buffer_memory);

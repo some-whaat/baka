@@ -15,29 +15,182 @@
 namespace baka {
    
   struct PushConstantData {
-    glm::mat4 model{1.f};
-    glm::mat4 transform{1.f}; // mvp
+    glm::mat4 projection_view{1.f};
+    uint32_t objectIndex;
     float time;
-    // padding to 16-byte boundary
-    float _pad0;
-    float _pad1;
-    float _pad2;
+    float _pad0; // padding to 16 bytes
   };
 
-  RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass) : device{_device}, render_pass(render_pass) {
-    createDescriptorSetLayout();
-    createDescriptorPool();
-    createPipelineLayout();
-    // default pipeline not created here; pipelines are created per-material on demand
+  // create or resize object storage buffer for per-object transforms
+  void RenderSystem::createObjectBuffer(size_t objectCount) {
+      // cleanup existing buffer if present
+      if (object_buffer != VK_NULL_HANDLE) {
+          if (object_mapped_data) {
+              vkUnmapMemory(device.getDevice(), object_buffer_memory);
+              object_mapped_data = nullptr;
+          }
+          vkDestroyBuffer(device.getDevice(), object_buffer, nullptr);
+          vkFreeMemory(device.getDevice(), object_buffer_memory, nullptr);
+          object_buffer = VK_NULL_HANDLE;
+          object_buffer_memory = VK_NULL_HANDLE;
+          objectDescriptorSet = VK_NULL_HANDLE;
+      }
+
+      if (objectCount == 0) return;
+      VkDeviceSize bufferSize = objectCount * sizeof(glm::mat4);
+      device.createBuffer(bufferSize,
+                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                          object_buffer,
+                          object_buffer_memory);
+
+      if (vkMapMemory(device.getDevice(), object_buffer_memory, 0, bufferSize, 0, &object_mapped_data) != VK_SUCCESS) {
+          throw std::runtime_error("failed to map object buffer memory!");
+      }
+
+      // write descriptor set
+      VkDescriptorSetAllocateInfo allocInfo{};
+      allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      allocInfo.descriptorPool = descriptorPool;
+      allocInfo.descriptorSetCount = 1;
+      allocInfo.pSetLayouts = &objectDescriptorSetLayout;
+      if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &objectDescriptorSet) != VK_SUCCESS) {
+          throw std::runtime_error("failed to allocate object descriptor set!");
+      }
+
+      VkDescriptorBufferInfo bufferInfo{};
+      bufferInfo.buffer = object_buffer;
+      bufferInfo.offset = 0;
+      bufferInfo.range = bufferSize;
+
+      VkWriteDescriptorSet descriptorWrite{};
+      descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      descriptorWrite.dstSet = objectDescriptorSet;
+      descriptorWrite.dstBinding = 0;
+      descriptorWrite.dstArrayElement = 0;
+      descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      descriptorWrite.descriptorCount = 1;
+      descriptorWrite.pBufferInfo = &bufferInfo;
+
+      vkUpdateDescriptorSets(device.getDevice(), 1, &descriptorWrite, 0, nullptr);
+  }
+
+  RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass, VkExtent2D extent) : device{_device}, render_pass(render_pass), swapchainExtent(extent) {
+     createDescriptorSetLayout();
+     createDescriptorPool();
+     // create object descriptor set layout so pipeline layout can include it
+     VkDescriptorSetLayoutBinding objectBinding{};
+     objectBinding.binding = 0;
+     objectBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+     objectBinding.descriptorCount = 1;
+     objectBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+     objectBinding.pImmutableSamplers = nullptr;
+
+     VkDescriptorSetLayoutCreateInfo objectLayoutInfo{};
+     objectLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+     objectLayoutInfo.bindingCount = 1;
+     objectLayoutInfo.pBindings = &objectBinding;
+     if (vkCreateDescriptorSetLayout(device.getDevice(), &objectLayoutInfo, nullptr, &objectDescriptorSetLayout) != VK_SUCCESS) {
+         throw std::runtime_error("failed to create object descriptor set layout");
+     }
+
+     createPipelineLayout();
+     // create GBuffer
+     gBuffer = std::make_unique<GBuffer>(device);
+     gBuffer->create(extent);
+    
+    // create object buffer with small default count (will be reallocated if needed in setupObjectDescriptors)
+    createObjectBuffer(16);
+
+     // create descriptor set layout for sampling GBuffer
+     VkDescriptorSetLayoutBinding gBinding[3];
+     for (uint32_t i = 0; i < 3; ++i) {
+        gBinding[i].binding = i;
+        gBinding[i].descriptorCount = 1;
+        gBinding[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        gBinding[i].pImmutableSamplers = nullptr;
+        gBinding[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+     }
+     VkDescriptorSetLayoutCreateInfo gLayoutInfo{};
+     gLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+     gLayoutInfo.bindingCount = 3;
+     gLayoutInfo.pBindings = gBinding;
+     if (vkCreateDescriptorSetLayout(device.getDevice(), &gLayoutInfo, nullptr, &gbufferDescriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create gbuffer descriptor set layout");
+     }
+     try {
+         createGBufferDescriptorSet();
+     } catch (const std::exception &e) {
+         // if descriptor set creation failed, destroy the gbuffer descriptor set layout and continue
+         if (gbufferDescriptorSetLayout != VK_NULL_HANDLE) {
+             vkDestroyDescriptorSetLayout(device.getDevice(), gbufferDescriptorSetLayout, nullptr);
+             gbufferDescriptorSetLayout = VK_NULL_HANDLE;
+         }
+     }
+
+     // create lighting pipeline (shaders may be missing; do not let this abort construction)
+     try {
+         createLightingPipeline("shaders/lighting.vert.spv", "shaders/lighting.frag.spv");
+     } catch (const std::exception &e) {
+         // if lighting pipeline creation failed, clean up any partially created layout and skip lighting
+         if (lightingPipelineLayout != VK_NULL_HANDLE) {
+             vkDestroyPipelineLayout(device.getDevice(), lightingPipelineLayout, nullptr);
+             lightingPipelineLayout = VK_NULL_HANDLE;
+         }
+         lightingPipeline.reset();
+     }
+     // default pipeline not created here; pipelines are created per-material on demand
   }
 
   RenderSystem::~RenderSystem() {
-    vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr);
-    vkDestroyDescriptorSetLayout(device.getDevice(), sceneDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
+    // destroy lighting pipeline first
+    lightingPipeline.reset();
+
+    if (lightingPipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(device.getDevice(), lightingPipelineLayout, nullptr);
+        lightingPipelineLayout = VK_NULL_HANDLE;
+    }
+
+    if (pipeline_layout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(device.getDevice(), pipeline_layout, nullptr);
+        pipeline_layout = VK_NULL_HANDLE;
+    }
+
+    if (gbufferDescriptorSetLayout != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(device.getDevice(), gbufferDescriptorSetLayout, nullptr);
+        gbufferDescriptorSetLayout = VK_NULL_HANDLE;
+    }
+
+    if (sceneDescriptorSetLayout != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(device.getDevice(), sceneDescriptorSetLayout, nullptr);
+        sceneDescriptorSetLayout = VK_NULL_HANDLE;
+    }
+
+    if (descriptorSetLayout != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
+        descriptorSetLayout = VK_NULL_HANDLE;
+    }
+
+    if (descriptorPool != VK_NULL_HANDLE) {
+        vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
+        descriptorPool = VK_NULL_HANDLE;
+    }
 
     cleanupSceneDataBuffer();
+
+    // cleanup object buffer
+    if (object_mapped_data) {
+        vkUnmapMemory(device.getDevice(), object_buffer_memory);
+        object_mapped_data = nullptr;
+    }
+    if (object_buffer != VK_NULL_HANDLE) {
+        vkDestroyBuffer(device.getDevice(), object_buffer, nullptr);
+        object_buffer = VK_NULL_HANDLE;
+    }
+    if (object_buffer_memory != VK_NULL_HANDLE) {
+        vkFreeMemory(device.getDevice(), object_buffer_memory, nullptr);
+        object_buffer_memory = VK_NULL_HANDLE;
+    }
 }
 
 
@@ -52,12 +205,25 @@ namespace baka {
           getOrCreatePipeline(obj.material->getVertPath(), obj.material->getFragPath());
       }
 
+      // allocate and fill per-object buffer with model matrices
       createSceneDataBuffer();
+      createObjectBuffer(objects.size());
+      if (object_mapped_data) {
+          for (size_t i = 0; i < objects.size(); ++i) {
+              glm::mat4 m = objects[i].transform.getMat4();
+              std::memcpy(reinterpret_cast<char*>(object_mapped_data) + i * sizeof(glm::mat4), &m, sizeof(glm::mat4));
+          }
+      }
   }
 
 
 Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, const std::string& fragFilepath) {
-    std::string key = vertFilepath + "|" + fragFilepath;
+    return getOrCreatePipeline(vertFilepath, fragFilepath, render_pass);
+}
+
+
+Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, const std::string& fragFilepath, VkRenderPass targetRenderPass) {
+    std::string key = vertFilepath + "|" + fragFilepath + "|" + std::to_string((uint64_t)targetRenderPass);
     auto it = material_pipelines.find(key);
     if (it != material_pipelines.end()) {
         return it->second.get();
@@ -65,8 +231,17 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
 
     PipelineConfigInfo pipelineConfig{};
     Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-    pipelineConfig.renderPass = render_pass;
+    pipelineConfig.renderPass = targetRenderPass;
     pipelineConfig.pipelineLayout = pipeline_layout;
+
+    // If this pipeline targets the GBuffer render pass it must have one color blend attachment state per
+    // color attachment in that render pass (GBuffer uses 3 color attachments). Otherwise Vulkan reports
+    // a mismatch between pipeline and render pass and rendering can fail (black screen or validation errors).
+    if (gBuffer && targetRenderPass == gBuffer->getRenderPass()) {
+        pipelineConfig.colorBlendAttachments.clear();
+        // create three attachments copying the default attachment state
+        for (int i = 0; i < 3; ++i) pipelineConfig.colorBlendAttachments.push_back(pipelineConfig.colorBlendAttachment);
+    }
 
     auto pipelinePtr = std::make_unique<Pipeline>(device, vertFilepath, fragFilepath, pipelineConfig);
     Pipeline* raw = pipelinePtr.get();
@@ -75,31 +250,21 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
 }
 
 
-  void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time) {
-    
-    glm::mat<4, 4, glm::f32, glm::packed_highp> projection_view = camera.getProjection() * camera.getView();
-    
-    glm::vec3 light_new_pos = glm::vec3(sin(frame_count), .5, -cos(frame_count))+ objects[0].transform.pos;
-    scene_data.point_lights[0].position = light_new_pos;
-    updateSceneDataBuffer();
+void RenderSystem::renderToGBuffer(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time) {
+    if (!gBuffer) return;
+    VkExtent2D extent = swapchainExtent;
+    gBuffer->beginGeometryPass(command_buffer, extent);
 
+    glm::mat4 projection_view = camera.getProjection() * camera.getView();
 
-    frame_count += (float)frame_time;
-
-    objects[0].transform.rot.x = sin(frame_count);
-
-    for (auto& obj : objects) {
+    for (size_t i = 0; i < objects.size(); ++i) {
+        auto &obj = objects[i];
         if (!obj.material) continue;
 
-        // bind the pipeline for this material
-        Pipeline* p = getOrCreatePipeline(obj.material->getVertPath(), obj.material->getFragPath());
+        Pipeline* p = getOrCreatePipeline(obj.material->getVertPath(), obj.material->getFragPath(), gBuffer->getRenderPass());
         p->bind(command_buffer);
 
-        std::array<VkDescriptorSet, 2> descriptorSets = {
-            obj.descriptor_set,
-            sceneDescriptorSet
-        };
-        
+        std::array<VkDescriptorSet, 3> descriptorSets = { obj.descriptor_set, sceneDescriptorSet, objectDescriptorSet };
         vkCmdBindDescriptorSets(
             command_buffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -109,13 +274,12 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
             descriptorSets.data(),
             0,
             nullptr);
-        
+
         PushConstantData push{};
-        
-        push.model = obj.transform.getMat4();
-        push.transform = projection_view * push.model;
+        push.projection_view = projection_view;
+        push.objectIndex = static_cast<uint32_t>(i);
         push.time = frame_count;
-        
+
         vkCmdPushConstants(
             command_buffer,
             pipeline_layout,
@@ -123,10 +287,37 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
             0,
             sizeof(PushConstantData),
             &push);
-        
+
         obj.model->bind(command_buffer);
         obj.model->draw(command_buffer);
     }
+
+    gBuffer->endGeometryPass(command_buffer);
+}
+
+
+void RenderSystem::renderGeometry(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time) {
+    // geometry pass must be recorded outside the swapchain render pass
+    renderToGBuffer(command_buffer, objects, camera, frame_time);
+}
+
+
+void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
+    if (!lightingPipeline) return;
+    // Bind lighting pipeline and GBuffer descriptor set + scene descriptor set
+    lightingPipeline->bind(command_buffer);
+    std::array<VkDescriptorSet,2> sets = { gbufferDescriptorSet, sceneDescriptorSet };
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, lightingPipelineLayout, 0, static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+    // Draw fullscreen triangle inside active swapchain render pass
+    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+}
+
+
+  void RenderSystem::renderObjects(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time) {
+    // Deprecated: keep compatibility by performing both passes if called
+    renderToGBuffer(command_buffer, objects, camera, frame_time);
+    // lighting must be inside swapchain render pass; if caller is inside it, draw lighting too
+    renderLighting(command_buffer);
 }
 
 
@@ -137,9 +328,10 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
       pushConstantRange.size = sizeof(PushConstantData);
 
 
-      std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+      std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {
           descriptorSetLayout,
-          sceneDescriptorSetLayout 
+          sceneDescriptorSetLayout,
+          objectDescriptorSetLayout
       };
 
       VkPipelineLayoutCreateInfo pipeline_layoutInfo{};
@@ -200,13 +392,14 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
       poolSizes[0].descriptorCount = 100;
       
       poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      poolSizes[1].descriptorCount = 1;
+      // we need storage buffer descriptors for scene + object buffers
+      poolSizes[1].descriptorCount = 2;
       
       VkDescriptorPoolCreateInfo poolInfo{};
       poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
       poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
       poolInfo.pPoolSizes = poolSizes.data();
-      poolInfo.maxSets = 101;  // 100 object sets + 1 scene set
+      poolInfo.maxSets = 102;  // 100 object sets + 1 scene set + gbuffer
       
       if (vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
           throw std::runtime_error("failed to create descriptor pool!");
@@ -217,7 +410,7 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
   void RenderSystem::createSceneDataBuffer() {
       // ensure we have at least one point light
       scene_data.point_lights.resize(1);
-      scene_data.point_lights[0].position = glm::vec3(0.f, 0.f, 0.f);
+      scene_data.point_lights[0].position = glm::vec4(0.f, 0.f, 0.f, 0.f);
       scene_data.point_lights[0].color = glm::vec4(1.f, 1.f, 1.f, 1.f);
 
       VkDeviceSize bufferSize = sizeof(decltype(scene_data.point_lights)::value_type) * scene_data.point_lights.size();
@@ -298,6 +491,65 @@ Pipeline* RenderSystem::getOrCreatePipeline(const std::string& vertFilepath, con
           scene_data_buffer_memory = VK_NULL_HANDLE;
       }
       sceneDescriptorSet = VK_NULL_HANDLE;
+  }
+
+  void RenderSystem::createGBufferDescriptorSet() {
+      // allocate descriptor set for gbuffer samplers
+      VkDescriptorSetAllocateInfo allocInfo{};
+      allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      allocInfo.descriptorPool = descriptorPool;
+      allocInfo.descriptorSetCount = 1;
+      allocInfo.pSetLayouts = &gbufferDescriptorSetLayout;
+
+      if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &gbufferDescriptorSet) != VK_SUCCESS) {
+          throw std::runtime_error("failed to allocate gbuffer descriptor set!");
+      }
+
+      auto views = gBuffer->getColorImageViews();
+      VkDescriptorImageInfo imageInfos[3];
+      for (uint32_t i = 0; i < 3; ++i) {
+          imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+          imageInfos[i].imageView = views[i];
+          imageInfos[i].sampler = gBuffer->getSampler();
+      }
+
+      std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+      for (uint32_t i = 0; i < 3; ++i) {
+          descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          descriptorWrites[i].dstSet = gbufferDescriptorSet;
+          descriptorWrites[i].dstBinding = i;
+          descriptorWrites[i].dstArrayElement = 0;
+          descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          descriptorWrites[i].descriptorCount = 1;
+          descriptorWrites[i].pImageInfo = &imageInfos[i];
+      }
+
+      vkUpdateDescriptorSets(device.getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+  }
+
+
+  void RenderSystem::createLightingPipeline(const std::string& vertPath, const std::string& fragPath) {
+      // create pipeline layout specific to lighting pass: gbuffer samplers + scene data
+      std::array<VkDescriptorSetLayout, 2> layouts = { gbufferDescriptorSetLayout, sceneDescriptorSetLayout };
+
+      VkPipelineLayoutCreateInfo layoutInfo{};
+      layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+      layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+      layoutInfo.pSetLayouts = layouts.data();
+      layoutInfo.pushConstantRangeCount = 0;
+      layoutInfo.pPushConstantRanges = nullptr;
+
+      if (vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &lightingPipelineLayout) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create lighting pipeline layout!");
+      }
+
+      PipelineConfigInfo config{};
+      Pipeline::defaultPipelineConfigInfo(config);
+      config.useVertexInput = false; // fullscreen pass
+      config.pipelineLayout = lightingPipelineLayout;
+      config.renderPass = render_pass;
+
+      lightingPipeline = std::make_unique<Pipeline>(device, vertPath, fragPath, config);
   }
 
  }  // namespace baka

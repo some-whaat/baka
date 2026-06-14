@@ -54,8 +54,12 @@ void App::run() {
     camera.updatePosRotKeys(window.getWindow(), frame_time);
 
     if (auto command_buffer = renderer.beginFrame()) {
+      // render geometry into GBuffer before starting swapchain render pass
+      render_system.renderGeometry(command_buffer, objects, camera, frame_time);
+
       renderer.beginSwapChainRenderPass(command_buffer);
-      render_system.renderObjects(command_buffer, objects, camera, /* TEMPORARY, delete */ frame_time);
+      // lighting/composite pass - must be inside swapchain render pass
+      render_system.renderLighting(command_buffer);
       renderer.endSwapChainRenderPass(command_buffer);
       renderer.endFrame();
        
