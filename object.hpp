@@ -1,7 +1,7 @@
 #pragma once
 
 #include "model.hpp"
-#include "texture.hpp"
+#include "material.hpp"
 
 
 #include <memory>
@@ -19,26 +19,6 @@ namespace baka {
 
         glm::mat4 getMat4() { // get transform in world space
             
-            // float c3 = 1.f;
-            // float s3 = 0.f;
-            // float c2 = 1.f;
-            // float s2 = 0.f;
-            // float c1 = 1.f;
-            // float s1 = 0.f;
-
-            // if (rot.z != 0) {
-            //     c3 = glm::cos(rot.z);
-            //     s3 = glm::sin(rot.z);
-            // }
-            // if (rot.x != 0) {
-            //     c2 = glm::cos(rot.x);
-            //     s2 = glm::sin(rot.x);
-            // }
-            // if (rot.y != 0) {
-            //     c1 = glm::cos(rot.y);
-            //     s1 = glm::sin(rot.y);
-            // }
-
             const float c3 = glm::cos(rot.z);
             const float s3 = glm::sin(rot.z);
             const float c2 = glm::cos(rot.x);
@@ -81,18 +61,17 @@ namespace baka {
 
         public:
 
-
         Transform transform;
         // glm::vec3 color;
         std::shared_ptr<Model> model;
-        std::shared_ptr<Texture> texture;
+        std::shared_ptr<Material> material;
         VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
 
         Object() {};
 
-        Object(std::shared_ptr<Model> _model, std::shared_ptr<Texture> _texture, Transform _transform) {
+        Object(std::shared_ptr<Model> _model, std::shared_ptr<Material> _material, Transform _transform) {
             model = std::move(_model);
-            texture = std::move(_texture);
+            material = std::move(_material);
             transform = _transform;
         }
 

@@ -66,6 +66,44 @@ std::unique_ptr<Model> Model::createQuad(Device &device, float size) {
   return std::make_unique<Model>(device, builder);
 }
 
+std::unique_ptr<Model> Model::createGrid(Device &device, float size, int subdivisions) {
+  Builder builder{};
+  float half = size / 2.0f;
+  float step = size / subdivisions;
+
+  for (float z = -half; z <= half; z += step) {
+    for (float x = -half; x <= half; x += step) {
+      Vertex v{}; v.position = {x, 0.0f, z};
+      v.uv = {(x+half)/size, (z+half)/size};
+      v.normal = {0.0f, 1.0f, 0.0f};
+      v.color = {1.0f, 1.0f, 1.0f};
+
+      builder.vertices.push_back(v);
+    }
+  }
+
+  // indices
+  for (int z = 0; z < subdivisions; z++) {
+      for (int x = 0; x < subdivisions; x++) {
+
+        int top_left = z * subdivisions + x;
+        int top_right = z * subdivisions + (x + 1);
+        int bottom_left = (z + 1) * subdivisions + x;
+        int bottom_right = (z + 1) * subdivisions + (x + 1);
+
+        builder.indices.push_back(top_left);
+        builder.indices.push_back(bottom_left);
+        builder.indices.push_back(bottom_right);
+
+        builder.indices.push_back(top_left);
+        builder.indices.push_back(bottom_right);
+        builder.indices.push_back(top_right);
+      }
+  }
+
+  return std::make_unique<Model>(device, builder);
+}
+
 void Model::createVertexBuffers(const std::vector<Vertex> &vertices) {
   vertex_count = static_cast<uint32_t>(vertices.size());
   assert(vertex_count >= 3 && "Vertex count must be at least 3");

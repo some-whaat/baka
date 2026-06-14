@@ -27,6 +27,7 @@ namespace baka {
 
         const glm::mat4& getProjection() const { return projection_matrix; }
         const glm::mat4& getView() const { return view_matrix; }
+        const glm::vec3& getPosition() const {return pos; }
 
     private:
         glm::mat4 projection_matrix{1.f};
