@@ -280,7 +280,8 @@ void RenderSystem::renderToGBuffer(VkCommandBuffer command_buffer, std::vector<O
             descriptorSets.data(),
             0,
             nullptr);
-
+        
+        frame_count += frame_time;
         PushConstantData push{};
         push.projection_view = projection_view;
         push.objectIndex = static_cast<uint32_t>(i);
@@ -425,13 +426,13 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer, const Camera c
   
 
   void RenderSystem::createSceneDataBuffer() {
-      const int lights_am = 9;
+      const int lights_am = 33;
 
       scene_data.point_lights.resize(lights_am);
       for (int i; i < lights_am; i++) {
         
         scene_data.point_lights[i].position = glm::vec4(sin(i) * 4., 0.f, cos(i) * 4., 0.f);
-        scene_data.point_lights[i].color = glm::vec4(sin(i), 1.f, 1.f, 1.f);
+        scene_data.point_lights[i].color = glm::vec4(sin(i), 1.f, cos(i), 1.f);
       }
       
 

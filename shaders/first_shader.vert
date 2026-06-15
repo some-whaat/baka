@@ -21,6 +21,7 @@ layout (location = 0) out float out_color;
 layout (location = 1) out vec3 out_normal;
 layout (location = 2) out vec2 out_uv;
 layout (location = 3) out vec3 out_pos;
+layout (location = 4) out float time;
 
 vec3 light_dir = vec3(0.45, 0.5, 0.05);
 const float ambient = 0.1;
@@ -31,10 +32,12 @@ void main() {
 
     // apply model transform before projection
     gl_Position = push.projection_view * model * vec4(position, 1.0);
+    gl_Position +=  vec4(sin(position.y + push.time), 0., sin(position.x + push.time), 0.);
 
     float world_light = dot(light_dir, trans_normal);
     out_color = world_light + ambient;
     out_normal = trans_normal;
     out_pos = (model * vec4(position, 1.0)).xyz;
     out_uv = uv;
+    time = push.time;
 }
