@@ -49,7 +49,7 @@ void App::run() {
     // ============================================================|
     // camera.setOrthographicProj(-aspect, aspect, -1, 1, -1, 1);// <=| works correctly only if top, bottom are 1, -1
     // ============================================================|
-    camera.setPerspectiveProj(glm::radians(50.f), aspect, 0.1f, 10);
+    camera.setPerspectiveProj(glm::radians(50.f), aspect, 0.1f, 100.);
 
     camera.updatePosRotKeys(window.getWindow(), frame_time);
 
@@ -59,7 +59,7 @@ void App::run() {
 
       renderer.beginSwapChainRenderPass(command_buffer);
       // lighting/composite pass - must be inside swapchain render pass
-      render_system.renderLighting(command_buffer);
+      render_system.renderLighting(command_buffer, camera);
       renderer.endSwapChainRenderPass(command_buffer);
       renderer.endFrame();
        
@@ -90,10 +90,12 @@ void App::loadObjects() {
   objects.push_back(std::move(obj));
 
   auto floor = Object();
-  floor.model = Model::createGrid(device, 9., 9);
+  floor.model = Model::createGrid(device, 2., 99);
 
-  auto floorTex = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/catapillar.jpg");
-  auto floorMat = std::make_shared<Material>(floorTex, "shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv");
+  std::shared_ptr<Texture> floorTex = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/blackwhight_guy.png");
+  std::shared_ptr<Material> floorMat = std::make_shared<Material>(floorTex, "shaders/displacement.vert.spv", "shaders/first_shader.frag.spv");
+  std::shared_ptr<Texture> floor_disp_map = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/blackwhight_guy.png");
+  floorMat->setDisplacementMap(floor_disp_map);
   floor.material = floorMat;
 
   floor.transform.pos = {0.0f, .5f, 3.f,};
@@ -103,8 +105,8 @@ void App::loadObjects() {
 
   auto chick = Object();
   chick.model =   Model::createModelFromFile(device, "models/chickentative/chickentative.obj");
-  auto chickTex = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/catapillar.jpg");
-  auto chickMat = std::make_shared<Material>(chickTex, "shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv");
+  std::shared_ptr<Texture> chickTex = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/catapillar.jpg");
+  std::shared_ptr<Material> chickMat = std::make_shared<Material>(chickTex, "shaders/first_shader.vert.spv", "shaders/first_shader.frag.spv");
   chick.material = chickMat;
   chick.transform.pos = {0.0f, .5f, 3.f,};
   chick.transform.scale = {1.f, 1.f, 1.f};

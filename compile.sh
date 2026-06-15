@@ -2,3 +2,4 @@
 /usr/bin/glslc shaders/first_shader.frag -o shaders/first_shader.frag.spv
 /usr/bin/glslc shaders/first_shader.frag -o shaders/lighting.vert.spv
 /usr/bin/glslc shaders/first_shader.frag -o shaders/lighting.frag.spv
+/usr/bin/glslc shaders/first_shader.frag -o shaders/displacement.vert

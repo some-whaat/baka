@@ -46,7 +46,7 @@ class RenderSystem {
         // split rendering: geometry to GBuffer (must be done outside swapchain render pass)
         void renderGeometry(VkCommandBuffer command_buffer, std::vector<Object> &objects, const Camera camera, double frame_time);
         // lighting/composite pass (must be called while swapchain render pass is active)
-        void renderLighting(VkCommandBuffer command_buffer);
+        void renderLighting(VkCommandBuffer command_buffer, const Camera camera);
 
         void setupObjectDescriptors(std::vector<Object>& objects);
 
@@ -109,7 +109,6 @@ class RenderSystem {
         // GBuffer gBuffer;
         std::unique_ptr<GBuffer> gBuffer;
         // lighting pipeline cleanup will be handled in destructor
-        // Note: lightingPipelineLayout is destroyed in destructor
 };
     
 }  // namespace baka

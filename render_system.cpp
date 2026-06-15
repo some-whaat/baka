@@ -21,6 +21,13 @@ namespace baka {
     float _pad0; // padding to 16 bytes
   };
 
+  struct PushConstantDataJustMatrix {
+    glm::mat4 projection_view{1.f};
+    // uint32_t objectIndex;
+    // float time;
+    // float _pad0; // padding to 16 bytes
+  };
+
   // create or resize object storage buffer for per-object transforms
   void RenderSystem::createObjectBuffer(size_t objectCount) {
       // cleanup existing buffer if present
@@ -201,7 +208,6 @@ namespace baka {
           obj.material->createDescriptorSet(device.getDevice(), descriptorPool, descriptorSetLayout);
           obj.descriptor_set = obj.material->getDescriptorSet();
 
-          // ensure pipeline exists for this material's shaders
           getOrCreatePipeline(obj.material->getVertPath(), obj.material->getFragPath());
       }
 
@@ -302,12 +308,18 @@ void RenderSystem::renderGeometry(VkCommandBuffer command_buffer, std::vector<Ob
 }
 
 
-void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
+void RenderSystem::renderLighting(VkCommandBuffer command_buffer, const Camera camera) {
     if (!lightingPipeline) return;
     // Bind lighting pipeline and GBuffer descriptor set + scene descriptor set
     lightingPipeline->bind(command_buffer);
     std::array<VkDescriptorSet,2> sets = { gbufferDescriptorSet, sceneDescriptorSet };
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, lightingPipelineLayout, 0, static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+    
+    PushConstantDataJustMatrix pc{};
+    pc.projection_view = camera.getProjection() * camera.getView();
+    vkCmdPushConstants(command_buffer, lightingPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pc), &pc);
+
+    
     // Draw fullscreen triangle inside active swapchain render pass
     vkCmdDraw(command_buffer, 3, 1, 0, 0);
 }
@@ -317,7 +329,7 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
     // Deprecated: keep compatibility by performing both passes if called
     renderToGBuffer(command_buffer, objects, camera, frame_time);
     // lighting must be inside swapchain render pass; if caller is inside it, draw lighting too
-    renderLighting(command_buffer);
+    renderLighting(command_buffer, camera);
 }
 
 
@@ -352,17 +364,20 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
 //   }
 
   void RenderSystem::createDescriptorSetLayout() {
-      VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-      samplerLayoutBinding.binding = 0;
-      samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      samplerLayoutBinding.descriptorCount = 1;
-      samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-      samplerLayoutBinding.pImmutableSamplers = nullptr;
+      // Material descriptor set: allow up to 3 combined image samplers (albedo, normal, displacement)
+      VkDescriptorSetLayoutBinding samplerBindings[3];
+      for (uint32_t i = 0; i < 3; ++i) {
+          samplerBindings[i].binding = i;
+          samplerBindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          samplerBindings[i].descriptorCount = 1;
+          samplerBindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+          samplerBindings[i].pImmutableSamplers = nullptr;
+      }
       
       VkDescriptorSetLayoutCreateInfo layoutInfo{};
       layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-      layoutInfo.bindingCount = 1;
-      layoutInfo.pBindings = &samplerLayoutBinding;
+      layoutInfo.bindingCount = 3;
+      layoutInfo.pBindings = samplerBindings;
       
       if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
           throw std::runtime_error("failed to create descriptor set layout!");
@@ -389,7 +404,9 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
       std::array<VkDescriptorPoolSize, 2> poolSizes{};
       
       poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      poolSizes[0].descriptorCount = 100;
+      // support up to 3 samplers per material (albedo, normal, displacement)
+      // assume up to 100 material/object descriptor sets + 3 gbuffer samplers
+      poolSizes[0].descriptorCount = 100 * 3 + 3;
       
       poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       // we need storage buffer descriptors for scene + object buffers
@@ -408,10 +425,15 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
   
 
   void RenderSystem::createSceneDataBuffer() {
-      // ensure we have at least one point light
-      scene_data.point_lights.resize(1);
-      scene_data.point_lights[0].position = glm::vec4(0.f, 0.f, 0.f, 0.f);
-      scene_data.point_lights[0].color = glm::vec4(1.f, 1.f, 1.f, 1.f);
+      const int lights_am = 9;
+
+      scene_data.point_lights.resize(lights_am);
+      for (int i; i < lights_am; i++) {
+        
+        scene_data.point_lights[i].position = glm::vec4(sin(i) * 4., 0.f, cos(i) * 4., 0.f);
+        scene_data.point_lights[i].color = glm::vec4(sin(i), 1.f, 1.f, 1.f);
+      }
+      
 
       VkDeviceSize bufferSize = sizeof(decltype(scene_data.point_lights)::value_type) * scene_data.point_lights.size();
 
@@ -536,8 +558,14 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer) {
       layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
       layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
       layoutInfo.pSetLayouts = layouts.data();
-      layoutInfo.pushConstantRangeCount = 0;
-      layoutInfo.pPushConstantRanges = nullptr;
+      
+      VkPushConstantRange pushConstantRange{};
+      pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+      pushConstantRange.offset = 0;
+      pushConstantRange.size = sizeof(PushConstantDataJustMatrix);
+
+      layoutInfo.pushConstantRangeCount = 1;
+      layoutInfo.pPushConstantRanges = &pushConstantRange;
 
       if (vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &lightingPipelineLayout) != VK_SUCCESS) {
           throw std::runtime_error("failed to create lighting pipeline layout!");
