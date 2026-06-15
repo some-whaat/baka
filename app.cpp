@@ -95,7 +95,9 @@ void App::loadObjects() {
   std::shared_ptr<Texture> floorTex = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/blackwhight_guy.png");
   std::shared_ptr<Material> floorMat = std::make_shared<Material>(floorTex, "shaders/displacement.vert.spv", "shaders/first_shader.frag.spv");
   std::shared_ptr<Texture> floor_disp_map = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/blackwhight_guy.png");
+  std::shared_ptr<Texture> floor_normal_map = std::make_shared<Texture>(device.getDevice(), device.getPhysicalDevice(), device.getCommandPool(), device.getGraphicsQueue(), "pictures/wavy_normal.jpg");
   floorMat->setDisplacementMap(floor_disp_map);
+  floorMat->setNormalMap(floor_normal_map);
   floor.material = floorMat;
 
   floor.transform.pos = {0.0f, .5f, 3.f,};

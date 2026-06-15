@@ -57,13 +57,13 @@ void main() {
         // drawing light overlay
         
         vec4 clip = pc.projection_view * vec4(light_pos, 1.0);
-        vec4 clip_point = pc.projection_view * vec4(pos, 1.0);
+        // vec4 clip_point = pc.projection_view * vec4(pos, 1.0);
 
         vec3 ndc = clip.xyz / clip.w;
-        vec3 ndc_point = clip_point.xyz / clip_point.w;
+        // vec3 ndc_point = clip_point.xyz / clip_point.w;
         vec2 light_uv = ndc.xy * 0.5 + 0.5;
 
-        if (clip.w > 0.0 && ndc.z < ndc_point.z) {
+        if (clip.w > 0.0) { // && ndc.z < ndc_point.z) {
             light_overlay += pow(0.01 / length(uv - light_uv), 99.0) * point_light_col_bight;
         }
         // light_overlay += pow(0.1/ length(uv - (clip_space/2. + vec2(0.5))), 99.) * point_light_col_bight;

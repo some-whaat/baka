@@ -76,6 +76,7 @@ std::unique_ptr<Model> Model::createGrid(Device &device, float size, int subdivi
       Vertex v{}; v.position = {x, 0.0f, z};
       v.uv = {(x+half)/size, (z+half)/size};
       v.normal = {0.0f, 1.0f, 0.0f};
+      // v.tangent = {0.0f, 1.0f, 0.0f};
       v.color = {1.0f, 1.0f, 1.0f};
 
       builder.vertices.push_back(v);
@@ -199,6 +200,16 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
   attribute_descriptions[3].location = 3;
   attribute_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
   attribute_descriptions[3].offset = offsetof(Vertex, color);
+
+  // attribute_descriptions[3].binding = 0;
+  // attribute_descriptions[3].location = 3;
+  // attribute_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+  // attribute_descriptions[3].offset = offsetof(Vertex, tangent);
+
+  // attribute_descriptions[4].binding = 0;
+  // attribute_descriptions[4].location = 4;
+  // attribute_descriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+  // attribute_descriptions[4].offset = offsetof(Vertex, color);
 
   return attribute_descriptions;
 }

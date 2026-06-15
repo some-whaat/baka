@@ -38,6 +38,17 @@ void main() {
     vec4 pos = push.projection_view * model * vec4(new_pos, 1.0);
     gl_Position = pos;
 
+    const vec3 tangent = vec3(1, 0, 0); ///// HARDCODING todo
+
+    // vec3 T = normalize(mat3(model) * a_Tangent.xyz);
+    // vec3 N = normalize(mat3(model) * a_Normal);
+    // // Re-orthogonalize T
+    // T = normalize(T - dot(T, N) * N);
+    // // Calculate B with handedness correction
+    // vec3 B = cross(N, T) * a_Tangent.w;  // tangent.w stores handedness (±1)
+    // v_TBN = mat3(T, B, N);
+
+    
     vec3 normal = texture(normal_map, uv).xyz;
 
     out_normal = normal;
