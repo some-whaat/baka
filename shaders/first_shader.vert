@@ -28,11 +28,13 @@ const float ambient = 0.1;
 
 void main() {
     mat4 model = objects.models[push.objectIndex];
-    vec3 trans_normal = normalize((model * vec4(normal, 0.0)).xyz);
+    
 
     // apply model transform before projection
     gl_Position = push.projection_view * model * vec4(position, 1.0);
-    gl_Position +=  vec4(sin(position.y + push.time), 0., sin(position.x + push.time), 0.);
+    gl_Position +=  vec4(sin((position.y + push.time) * 9.) * 0.1, 0., sin((position.x + push.time) * 9.) * 0.1, 0.);
+
+    vec3 trans_normal = normalize((model * vec4(normal, 0.0)).xyz) + vec3(sin((position.y + push.time) * 9.) * 0.1, 0., sin((position.x + push.time) * 9.) * 0.1);;
 
     float world_light = dot(light_dir, trans_normal);
     out_color = world_light + ambient;
