@@ -32,9 +32,10 @@ void main() {
 
     // apply model transform before projection
     gl_Position = push.projection_view * model * vec4(position, 1.0);
-    gl_Position +=  vec4(sin((position.y + push.time) * 9.) * 0.1, 0., sin((position.x + push.time) * 9.) * 0.1, 0.);
+    // vec4 jiggle = vec4(sin((position.y + push.time) * 9.) * 0.1, 0., sin((position.x + push.time) * 9.) * 0.1, 0.);
+    // gl_Position += jiggle;
 
-    vec3 trans_normal = normalize((model * vec4(normal, 0.0)).xyz) + vec3(sin((position.y + push.time) * 9.) * 0.1, 0., sin((position.x + push.time) * 9.) * 0.1);;
+    vec3 trans_normal = normalize((model * vec4(normal, 0.0)).xyz);// + vec3(jiggle);
 
     float world_light = dot(light_dir, trans_normal);
     out_color = world_light + ambient;

@@ -86,7 +86,7 @@ void App::loadObjects() {
   obj.material = mat;
   obj.transform.pos = {0.0f, .0f, 3.f,};
   obj.transform.scale = {.5f, .5f, .5f};
-  obj.transform.rot = {0.f, 0.f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
+  obj.transform.rot = {1.6f, 3.14f, 0.f};//glm::vec3(.25f * 6.28f, 0.f, 0.f);
   objects.push_back(std::move(obj));
 
   auto floor = Object();

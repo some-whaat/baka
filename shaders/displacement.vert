@@ -26,19 +26,18 @@ layout (location = 1) out vec3 out_normal;
 layout (location = 2) out vec2 out_uv;
 layout (location = 3) out vec3 out_pos;
 
-const float intensity = 1.;
+const float intensity = .1;
 
 vec3 light_dir = vec3(0.45, 0.5, 0.05);
 
 void main() {
     mat4 model = objects.models[push.objectIndex];
 
-    
 
     vec3 normal = (push.projection_view * vec4(2.0 * (texture(normal_map, uv).xyz - vec3(0.5)), 0.)).xyz;
 
     vec3 displacement = vec3(0., texture(displacement_map, uv).x, 0.);
-    vec3 new_pos = (position + displacement) * intensity;
+    vec3 new_pos = position + displacement * intensity;
     // normal = (normal + displacement) * intensity;
     vec4 pos = push.projection_view * model * vec4(new_pos, 1.0);
     gl_Position = pos;
