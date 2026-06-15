@@ -6,7 +6,7 @@
 #include "model.hpp"
 #include "object.hpp"
 #include "camera.hpp"
-#include "texture.hpp"
+#include "material.hpp"
 
 // std
 #include <memory>

@@ -273,6 +273,21 @@ std::vector<const char *> Device::getRequiredExtensions() {
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
 
+  // Some instance/device extensions require VK_KHR_get_physical_device_properties2.
+  // If available, enable it so dependent extensions validate correctly.
+  uint32_t extCount = 0;
+  vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
+  if (extCount > 0) {
+    std::vector<VkExtensionProperties> avail(extCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extCount, avail.data());
+    for (const auto &ext : avail) {
+      if (strcmp(ext.extensionName, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) == 0) {
+        extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        break;
+      }
+    }
+  }
+
   return extensions;
 }
 

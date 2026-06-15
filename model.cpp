@@ -66,6 +66,45 @@ std::unique_ptr<Model> Model::createQuad(Device &device, float size) {
   return std::make_unique<Model>(device, builder);
 }
 
+std::unique_ptr<Model> Model::createGrid(Device &device, float size, int subdivisions) {
+  Builder builder{};
+  float half = size / 2.0f;
+  float step = size / subdivisions;
+
+  for (float z = -half; z <= half; z += step) {
+    for (float x = -half; x <= half; x += step) {
+      Vertex v{}; v.position = {x, 0.0f, z};
+      v.uv = {(x+half)/size, (z+half)/size};
+      v.normal = {0.0f, 1.0f, 0.0f};
+      // v.tangent = {0.0f, 1.0f, 0.0f};
+      v.color = {1.0f, 1.0f, 1.0f};
+
+      builder.vertices.push_back(v);
+    }
+  }
+
+  // indices
+  for (int z = 0; z < subdivisions; z++) {
+      for (int x = 0; x < subdivisions; x++) {
+
+        int top_left = z * subdivisions + x;
+        int top_right = z * subdivisions + (x + 1);
+        int bottom_left = (z + 1) * subdivisions + x;
+        int bottom_right = (z + 1) * subdivisions + (x + 1);
+
+        builder.indices.push_back(top_left);
+        builder.indices.push_back(bottom_left);
+        builder.indices.push_back(bottom_right);
+
+        builder.indices.push_back(top_left);
+        builder.indices.push_back(bottom_right);
+        builder.indices.push_back(top_right);
+      }
+  }
+
+  return std::make_unique<Model>(device, builder);
+}
+
 void Model::createVertexBuffers(const std::vector<Vertex> &vertices) {
   vertex_count = static_cast<uint32_t>(vertices.size());
   assert(vertex_count >= 3 && "Vertex count must be at least 3");
@@ -96,7 +135,7 @@ void Model::createIndexBuffers(const std::vector<uint32_t> &indices) {
   VkDeviceSize buffer_size = sizeof(indices[0]) * index_count;
   device.createBuffer(
       buffer_size,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       index_buffer,
       index_buffer_memory);
@@ -161,6 +200,16 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
   attribute_descriptions[3].location = 3;
   attribute_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
   attribute_descriptions[3].offset = offsetof(Vertex, color);
+
+  // attribute_descriptions[3].binding = 0;
+  // attribute_descriptions[3].location = 3;
+  // attribute_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+  // attribute_descriptions[3].offset = offsetof(Vertex, tangent);
+
+  // attribute_descriptions[4].binding = 0;
+  // attribute_descriptions[4].location = 4;
+  // attribute_descriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+  // attribute_descriptions[4].offset = offsetof(Vertex, color);
 
   return attribute_descriptions;
 }

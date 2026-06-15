@@ -78,12 +78,21 @@ void Pipeline::createGraphicsPipeline(
   auto bindingDescriptions = Model::Vertex::getBindingDescriptions();
   auto attributeDescriptions = Model::Vertex::getAttributeDescriptions();
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-  vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertexInputInfo.vertexAttributeDescriptionCount =
-      static_cast<uint32_t>(attributeDescriptions.size());
-  vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-  vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-  vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+  if (configInfo.useVertexInput) {
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+  } else {
+    // empty vertex input state — zero out the structure explicitly
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+  }
 
   VkGraphicsPipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -94,6 +103,40 @@ void Pipeline::createGraphicsPipeline(
   pipelineInfo.pViewportState = &configInfo.viewportInfo;
   pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
   pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
+
+  // support multiple color blend attachments if provided
+  VkPipelineColorBlendStateCreateInfo colorBlendInfo = configInfo.colorBlendInfo;
+  if (!configInfo.colorBlendAttachments.empty()) {
+    colorBlendInfo.attachmentCount = static_cast<uint32_t>(configInfo.colorBlendAttachments.size());
+    // Keep a pointer to the vector's data by storing it in a local static — the vector will outlive this call as it's part of configInfo passed by the caller, but to be safe we copy to a temporary here.
+    // However Vulkan expects the pAttachments memory to be valid during vkCreateGraphicsPipelines call only, so using a local array is safe.
+    std::vector<VkPipelineColorBlendAttachmentState> attachments = configInfo.colorBlendAttachments;
+    colorBlendInfo.pAttachments = attachments.data();
+    // create pipeline with this local attachments pointer — it will be valid for the duration of vkCreateGraphicsPipelines
+    pipelineInfo.pColorBlendState = &colorBlendInfo;
+
+    pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
+    pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
+
+    pipelineInfo.layout = configInfo.pipelineLayout;
+    pipelineInfo.renderPass = configInfo.renderPass;
+    pipelineInfo.subpass = configInfo.subpass;
+
+    pipelineInfo.basePipelineIndex = -1;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (vkCreateGraphicsPipelines(
+            device.getDevice(),
+            VK_NULL_HANDLE,
+            1,
+            &pipelineInfo,
+            nullptr,
+            &graphicsPipeline) != VK_SUCCESS) {
+      throw std::runtime_error("failed to create graphics pipeline");
+    }
+    return;
+  }
+
   pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
   pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
   pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
