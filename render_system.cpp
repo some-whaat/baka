@@ -263,7 +263,7 @@ void RenderSystem::renderToGBuffer(VkCommandBuffer command_buffer, std::vector<O
     gBuffer->beginGeometryPass(command_buffer, extent);
 
     
-    updateSceneDataBuffer();
+    updateSceneDataBuffer(frame_time);
     
 
     glm::mat4 projection_view = camera.getProjection() * camera.getView();
@@ -435,13 +435,15 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer, const Camera c
       // initialize RNG for random color generation
       std::random_device rd;
       std::mt19937 rng(rd());
-      std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+      std::uniform_real_distribution<float> dist(0.5f, 1.0f);
 
       scene_data.point_lights.resize(lights_am);
       for (int i = 0; i < lights_am; i++) {
-        // keep a fixed initial position; color is random per light
+
         scene_data.point_lights[i].position = glm::vec4(0.f, 0.f, 2.f, 1.f);
-        scene_data.point_lights[i].color = glm::vec4(dist(rng), dist(rng), dist(rng), 1.f);
+        scene_data.point_lights[i].velocity = glm::normalize(glm::vec3(dist(rng), dist(rng), dist(rng)));
+        scene_data.point_lights[i].color = glm::vec4(scene_data.point_lights[i].velocity, 1.f);
+        scene_data.point_lights[i].live_time = 0.f;
         std::cout << scene_data.point_lights[i].color.x << scene_data.point_lights[i].color.y << scene_data.point_lights[i].color.z << std::endl;
       }
       
@@ -492,14 +494,20 @@ void RenderSystem::renderLighting(VkCommandBuffer command_buffer, const Camera c
   }
 
 
-  void RenderSystem::updateSceneDataBuffer() {
+  void RenderSystem::updateSceneDataBuffer(double frame_time) {
       if (scene_data.point_lights.empty()) return;
+
 
       VkDeviceSize bufferSize = sizeof(decltype(scene_data.point_lights)::value_type) * scene_data.point_lights.size();
       
       for (int i = 0; i < lights_am; i++) {
-        scene_data.point_lights[i].position += (scene_data.point_lights[i].color - 0.5f) * 0.001f; // glm::vec4(sin(i) * 4., 0.f, cos(i) * 4., 1.f);
-        }
+        scene_data.point_lights[i].live_time += frame_time;
+        
+        scene_data.point_lights[i].position.x += (scene_data.point_lights[i].color.x - 0.5f) * 0.001f; // glm::vec4(sin(i) * 4., 0.f, cos(i) * 4., 1.f);
+        scene_data.point_lights[i].position.z += (scene_data.point_lights[i].color.z - 0.5f) * 0.001f; // glm::vec4(sin(i) * 4., 0.f, cos(i) * 4., 1.f);
+        
+        scene_data.point_lights[i].position.y = sin(scene_data.point_lights[i].live_time) * 0.1;
+    }
 
       if (scene_mapped_data) {
           std::memcpy(scene_mapped_data, scene_data.point_lights.data(), static_cast<size_t>(bufferSize));

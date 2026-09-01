@@ -25,7 +25,9 @@ class RenderSystem {
         // alignas(16) glm::vec4 color; // w is brightness
 
         glm::vec4 position; // xyz = position, w = padding
+        glm::vec3 velocity;
         glm::vec4 color; // rgba (w = brightness)
+        float live_time;
     };
 
     struct SceneData {
@@ -83,15 +85,15 @@ class RenderSystem {
         void createGBufferDescriptorSet();
 
         void createSceneDataBuffer();
-        void updateSceneDataBuffer();
+        void updateSceneDataBuffer(double frame_time);
         void cleanupSceneDataBuffer();
         
 
         
-        double last_time = glfwGetTime();
+        // double last_time = glfwGetTime();
         float frame_count = 0;
 
-        void updateFrameRate();
+        // void updateFrameRate();
 
         Device &device;
 

@@ -6,6 +6,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <memory>
+#include "unibuffer.hpp"
 
 namespace baka {
 
@@ -56,14 +57,12 @@ class Model {
 
         Device& device;
 
-        VkBuffer vertex_buffer;
-        VkDeviceMemory vertex_buffer_memory;
+        std::unique_ptr<Buffer> vertex_buffer;
         uint32_t vertex_count;
 
 
         bool has_index_buffer = false;
-        VkBuffer index_buffer;
-        VkDeviceMemory index_buffer_memory;
+        std::unique_ptr<Buffer> index_buffer;
         uint32_t index_count;
 
 };

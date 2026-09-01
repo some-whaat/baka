@@ -7,6 +7,7 @@ layout(set = 0, binding = 2) uniform sampler2D gAlbedo;
 struct PointLight {
     vec3 pos;
     vec4 color;  // w is brightness
+    float live_time;
 };
 
 layout(std430, set = 1, binding = 0) readonly buffer SceneData {
