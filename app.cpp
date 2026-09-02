@@ -22,7 +22,8 @@ App::App() {
 App::~App() {}
 
 void App::run() {
-  RenderSystem render_system{device, renderer.getSwapChainRenderPass()};
+  auto particle_system = std::make_unique<RenderSystem::FountainParticleSystem>( glm::vec4(0.0f, -4.0f, 3.0f, 0.0f), 1.5f, 2.5f, 3.0f);
+  RenderSystem render_system{device, renderer.getSwapChainRenderPass(), std::move(particle_system)};
 
   render_system.setupObjectDescriptors(objects);
 

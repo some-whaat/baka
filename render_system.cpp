@@ -58,8 +58,13 @@ void RenderSystem::createObjectBuffer(size_t objectCount) {
   objectDescriptorSet->updateBuffer(0, object_buffer_raw, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 }
 
-RenderSystem::RenderSystem(Device &_device, VkRenderPass render_pass, VkExtent2D extent)
-    : device{_device}, render_pass(render_pass), swapchainExtent(extent) {
+RenderSystem::RenderSystem(
+  Device &_device,
+  VkRenderPass render_pass,
+  std::unique_ptr<ParticleSystem> particle_system,
+  VkExtent2D extent)
+  : particle_system{std::move(particle_system)}, device{_device}, render_pass(render_pass), swapchainExtent(extent) {
+
   createDescriptorSetLayout();
   createDescriptorPool();
 
@@ -329,17 +334,11 @@ void RenderSystem::createDescriptorPool() {
 const int lights_am = 33;
 
 void RenderSystem::createSceneDataBuffer() {
-  std::random_device rd;
-  std::mt19937 rng(rd());
-  std::uniform_real_distribution<float> dist(0.5f, 1.0f);
-
-  scene_data.point_lights.resize(lights_am);
-  for (int i = 0; i < lights_am; ++i) {
-    scene_data.point_lights[i].position = glm::vec4(0.f, 0.f, 2.f, 1.f);
-    scene_data.point_lights[i].velocity = glm::normalize(glm::vec3(dist(rng), dist(rng), dist(rng)));
-    scene_data.point_lights[i].color = glm::vec4(scene_data.point_lights[i].velocity, 1.f);
-    scene_data.point_lights[i].live_time = 0.f;
+  if (!particle_system) {
+    throw std::runtime_error("RenderSystem requires a particle system");
   }
+
+  scene_data.point_lights = particle_system->getParticles();
 
   const VkDeviceSize bufferSize = sizeof(PointLightData) * scene_data.point_lights.size();
 
@@ -361,17 +360,14 @@ void RenderSystem::createSceneDataBuffer() {
 }
 
 void RenderSystem::updateSceneDataBuffer(double frame_time) {
-  if (scene_data.point_lights.empty()) return;
-
-  const VkDeviceSize bufferSize = sizeof(PointLightData) * scene_data.point_lights.size();
-
-  for (int i = 0; i < lights_am; ++i) {
-    scene_data.point_lights[i].live_time += static_cast<float>(frame_time);
-    scene_data.point_lights[i].position.x += (scene_data.point_lights[i].color.x - 0.5f) * 0.001f;
-    scene_data.point_lights[i].position.z += (scene_data.point_lights[i].color.z - 0.5f) * 0.001f;
-    scene_data.point_lights[i].position.y = std::sin(scene_data.point_lights[i].live_time) * 0.1f;
+  if (!particle_system) {
+    return;
   }
 
+  particle_system->update(static_cast<float>(frame_time));
+  scene_data.point_lights = particle_system->getParticles();
+
+  const VkDeviceSize bufferSize = sizeof(PointLightData) * scene_data.point_lights.size();
   if (scene_mapped_data) {
     std::memcpy(scene_mapped_data, scene_data.point_lights.data(), static_cast<size_t>(bufferSize));
   }
